@@ -1,11 +1,12 @@
 #News Analyzer - APVO
+
 ##Aplikacija za klasifikaciju vijesti 
 
 Project setup:
 1. Pokreni WSL
-2.  git clone https://github.com/EricJakovac/NewsAnalyzer.git
+2.  Koristi naredbe git clone https://github.com/EricJakovac/NewsAnalyzer.git
     cd NewsAnalyzer
-3.  python3 -m venv venv
+3.  Nakon toga ubaci ove dvije naredbe python3 -m venv venv
     source venv/bin/activate
 4. Provjeri  node -v
              npm -v
