@@ -1,21 +1,15 @@
 #News Analyzer - APVO
 
-##Aplikacija za klasifikaciju vijesti 
+___Aplikacija za klasifikaciju vijesti___
 
 Project setup:
-1. Pokreni WSL
-2.  Koristi naredbe git clone https://github.com/EricJakovac/NewsAnalyzer.git
-    cd NewsAnalyzer
-3.  Nakon toga ubaci ove dvije naredbe python3 -m venv venv
-    source venv/bin/activate
-4. Provjeri  node -v
-             npm -v
-   ako ti nisu node i npm instalirani samo baci onu sudo install naredbu    
-6. pip install -r requirements.txt
-7. Flask ce se pokretati na nacin da ce se prvo istrenirati model te onda pokrenuti backend,
-   a frontend  cd frontend
-               npm start 
-   i to ce ti pokrenuti react u web pregledniku
+1. Kloniraj projekt
+2. Udi u frontend folder cd .\frontend\
+3. Pokreni naredbu npm install - ovo instalira sve frontend dependencies
+4. Onda pokreni naredbu npm run setup - ovo kreira virtual environment i instalira potrebne backend dependencies
+5. I nakon sto su svi dependencies isntalirani pokreces backend i frontend skupa s naredbom npm run dev
+
+Dodatno ces mozda morati skinuti Mongo for VSCode extension na Vscodu ako ti se nece uspjesti spojiti s bazom. Trenutno da bi povukla s API-a podatke, istrenirala model te ostalo sve se mora napraviti preko Postmana s slanjem zahtjeva na odredene endpointe, ali to ti sve objasnim kada se cujemo, za sada samo probaj to sve pokrenuti pa cemo dalje skupa nastaviti.
 
 Vjerojatno ces trebati za svaki push/pull i slicno autentificirati se na github sa svojim korisnickim imenom i lozinkom, ali lozinka je zapravo tvoj PAT (token) koji je kod tebe na kompu lokalno pa preporucujem da napravis jos ovo da to ne trebas svaki put upisivati. Obavezno udi na wsl radi ove naredbe pod 9.
 1. Udi na ovaj link https://github.com/settings/tokens
