@@ -3,7 +3,13 @@ from pymongo import MongoClient
 
 client = MongoClient(MONGO_URI)
 db = client["news_db"]
-articles_collection = db["articles"]
+business_collection = db["business"]
+sports_collection = db["sports"]
+entertainment_collection = db["entertainment"]
+technology_collection = db["technology"]
+general_collection = db["general"]
+health_collection = db["health"]
+science_collection = db["science"]
 clusters_collection = db["clusters"]
 
 

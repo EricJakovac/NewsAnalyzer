@@ -1,68 +1,75 @@
-import json
-
+from collections_map import collections_map
 from flask import Flask, jsonify, request
 from flask_cors import CORS
-from mongo import articles_collection, clusters_collection
-from news_fetcher import fetch_tech_articles
-from tech_classifier import predict_tech_type, train_classifier
+from mongo import clusters_collection
+from news_fetcher import fetch_articles_by_topic
 from theme_clusterer import cluster_themes
+
+from backend.news_classifier import (
+    detect_topic,
+    predict_article_label,
+    train_classifier_for_topic,
+)
 
 app = Flask(__name__)
 CORS(app)
 
 
+# Dohvacanje articla po topicu
 @app.route("/fetch-articles", methods=["POST"])
 def fetch_articles_route():
-    articles = fetch_tech_articles()
+    data = request.get_json()
+    topic = data.get("topic")
+
+    if not topic:
+        return jsonify({"error": "No topic provided"}), 400
+
+    articles = fetch_articles_by_topic(topic)
+
     if not articles:
-        return jsonify({"error": "No articles fetched"}), 400
-    return jsonify({"message": f"Fetched and stored {len(articles)} articles"}), 200
+        return jsonify({"error": f"No articles fetched for topic '{topic}'"}), 400
+
+    return jsonify({"message": f"Fetched and stored {len(articles)} '{topic}' articles"}), 200
 
 
+# Klasifikacija artickla po topicu
 @app.route("/classify", methods=["POST"])
 def classify():
     text = request.json.get("text", "")
-    return jsonify({"tech_type": predict_tech_type(text)})
+    if not text:
+        return jsonify({"error": "Field 'text' is required"}), 400
+
+    topic = detect_topic(text)
+
+    try:
+        label = predict_article_label(text, topic)
+        return jsonify({"topic": topic, "tech_type": label})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+# Treniranje modela klasifikatora po topicu
+@app.route("/train-classifier", methods=["POST"])
+def train():
+    data = request.json
+    topic = data.get("topic", "").lower()
+    if not topic:
+        return jsonify({"error": "Field 'topic' is required"}), 400
+
+    if topic not in collections_map:
+        return jsonify({"error": f"Topic '{topic}' is not supported"}), 400
+
+    try:
+        train_classifier_for_topic(topic)
+        return jsonify({"message": f"Model for topic '{topic}' trained successfully"})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 
 @app.route("/clusters")
 def get_clusters():
     clusters = list(clusters_collection.find({}, {"_id": 0}))
     return jsonify(clusters)
-
-
-@app.route("/train-classifier", methods=["POST"])
-def train():
-    try:
-        train_classifier()
-        return jsonify({"message": "Model trained successfully"})
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
-
-
-@app.route("/process-and-save", methods=["POST"])
-def process_and_save():
-    # Step 1: Fetch tech articles
-    articles = fetch_tech_articles()
-    if not articles:
-        return jsonify({"error": "No articles found"}), 404
-
-    # Optionally save new articles to MongoDB
-    articles_collection.insert_many(articles)
-
-    # Step 2: Classify each article
-    for article in articles:
-        text = article.get("title", "") + " " + article.get("description", "")
-        article["tech_type"] = predict_tech_type(text)
-
-    # Step 3: Cluster the articles
-    clustered = cluster_themes(articles)  # returns list of cluster dicts
-
-    # Step 4: Save clusters to MongoDB (clear old clusters first)
-    clusters_collection.delete_many({})
-    clusters_collection.insert_many(clustered)
-
-    return jsonify({"message": "Articles processed and saved to MongoDB", "clusters": clustered}), 201
 
 
 if __name__ == "__main__":
