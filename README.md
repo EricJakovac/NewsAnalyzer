@@ -39,7 +39,7 @@ ___Za Napraviti___
 - Dodati preprocess i očistiti podatke
 - Home promjeniti da dohvaca i prikazuje podatke sa top-headlines
 - Napraviti pipeline (dohvacanje, ciscenje, spremanje, klasifikacija i prikaz)
-- 
+
 - Na analitics prikazati za svaki article njegovu klasifikaciju
 - Dodati gumb za dohvacanje articla (refresh) koji poziva pipeline
 - General tab sa general podacima
