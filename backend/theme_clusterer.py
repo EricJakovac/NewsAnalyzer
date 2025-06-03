@@ -1,5 +1,4 @@
 import numpy as np
-from mongo import articles_collection, clusters_collection
 from sklearn.cluster import KMeans
 from sklearn.feature_extraction.text import TfidfVectorizer
 

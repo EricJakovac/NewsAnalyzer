@@ -2,14 +2,13 @@ from collections_map import collections_map
 from flask import Flask, jsonify, request
 from flask_cors import CORS
 from mongo import clusters_collection
-from news_fetcher import fetch_articles_by_topic
-from theme_clusterer import cluster_themes
-
-from backend.news_classifier import (
+from news_classifier import (
     detect_topic,
     predict_article_label,
     train_classifier_for_topic,
 )
+from news_fetcher import fetch_articles_by_topic
+from theme_clusterer import cluster_themes
 
 app = Flask(__name__)
 CORS(app)
