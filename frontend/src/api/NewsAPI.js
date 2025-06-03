@@ -1,23 +1,13 @@
-const API_BASE_URL = 'http://localhost:5000'; // Make sure this matches your Flask URL
+import axios from "axios";
 
-export const fetchArticles = async (category = 'general', limit = 20) => {
+const BASE_URL = "http://localhost:5000"; // prilagodi ako koristiš drugi port
+
+export const fetchArticles = async (topic) => {
   try {
-    const response = await fetch(`${API_BASE_URL}/articles?category=${category}&limit=${limit}`);
-    
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status} - ${response.statusText}`);
-    }
-    
-    const data = await response.json();
-    return data.articles || [];
+    const response = await axios.get(`${BASE_URL}/articles/${topic}`);
+    return response.data.articles; 
   } catch (error) {
-    console.error('Error fetching articles:', error);
-    
-    // More specific error handling
-    if (error.message.includes('Failed to fetch')) {
-      throw new Error('Cannot connect to server. Make sure your Flask backend is running on http://localhost:5000');
-    }
-    
+    console.error("Error fetching articles:", error);
     throw error;
   }
 };

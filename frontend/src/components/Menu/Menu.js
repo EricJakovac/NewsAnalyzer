@@ -12,7 +12,7 @@ const categoryIcons = {
   Entertainment: <BiSolidParty className="menu-icon" size={22} />,
   Health: <GiHealthNormal className="menu-icon" size={22} />,
   Science: <AiFillExperiment className="menu-icon" size={22} />,
-  Sport: <MdSportsBasketball className="menu-icon" size={22} />,
+  Sports: <MdSportsBasketball className="menu-icon" size={22} />,
 };
 
 function Menu({ onSelectMenu }) {
@@ -21,7 +21,7 @@ function Menu({ onSelectMenu }) {
     "Entertainment",
     "Health",
     "Science",
-    "Sport",
+    "Sports",
   ];
 
   const handleCategorySelect = (category) => {

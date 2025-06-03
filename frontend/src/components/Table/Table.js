@@ -32,7 +32,8 @@ const Table = ({ data, onRowClick, onShowInfoBlock }) => {
       <table>
         <thead>
           <tr>
-            <th style={{ width: '35%' }}>Article Title</th>
+            <th style={{ width: '5%' }}>No.</th> {/* Novi stupac za redni broj */}
+            <th style={{ width: '30%' }}>Article Title</th>
             <th style={{ width: '20%' }}>Source</th>
             <th style={{ width: '15%' }}>Author</th>
             <th style={{ width: '15%' }}>Date</th>
@@ -42,6 +43,7 @@ const Table = ({ data, onRowClick, onShowInfoBlock }) => {
         <tbody>
           {data.map((item, index) => (
             <tr key={item._id || item.id || index}>
+              <td>{index + 1}</td> {/* Redni broj */}
               <td title={item.title}>{truncateText(item.title, 80)}</td>
               <td>{getSource(item)}</td>
               <td>{item.author || 'N/A'}</td>

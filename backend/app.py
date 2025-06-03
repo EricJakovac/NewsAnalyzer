@@ -9,15 +9,12 @@ from news_classifier import (
 )
 from news_fetcher import fetch_articles_by_topic
 from theme_clusterer import cluster_themes
-from bson import ObjectId
-import json
 
 app = Flask(__name__)
 CORS(app)
 
+
 # Dohvacanje articla po topicu iz mongodb
-
-
 @app.route("/articles/<topic>", methods=["GET"])
 def get_articles_by_topic(topic):
     topic = topic.lower()
@@ -48,6 +45,7 @@ def fetch_articles_route():
 
     return jsonify({"message": f"Fetched and stored {len(articles)} '{topic}' articles"}), 200
 
+
 @app.route("/classify", methods=["POST"])
 def classify():
     text = request.json.get("text", "")
@@ -61,6 +59,7 @@ def classify():
         return jsonify({"topic": topic, "tech_type": label})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
 
 @app.route("/train-classifier", methods=["POST"])
 def train():
@@ -78,10 +77,12 @@ def train():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+
 @app.route("/clusters")
 def get_clusters():
     clusters = list(clusters_collection.find({}, {"_id": 0}))
     return jsonify(clusters)
+
 
 if __name__ == "__main__":
     app.run(debug=True)
