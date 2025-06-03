@@ -1,0 +1,107 @@
+.table-container {
+  width: 100%;
+  border-radius: 5px;
+  overflow: hidden;
+  background: white;
+}
+
+.table-wrapper {
+  overflow: auto;
+  max-height: 580px;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+
+thead {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+}
+
+th,
+td {
+  padding: 12px;
+  text-align: left;
+  border-bottom: 1px solid #d3d3d3;
+  color: #333;
+  width: 25%;
+  box-sizing: border-box;
+}
+
+th {
+  background: #f8f9fa;
+  font-weight: 600;
+  box-shadow:
+    inset 0 1.5px 0 0 #b8cfce,
+    inset 0 -1.5px 0 0 #b8cfce;
+}
+
+thead tr {
+  position: relative;
+}
+
+thead tr::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 100%;
+  height: 1.5px;
+  background: #b8cfce;
+  z-index: 3;
+  pointer-events: none;
+}
+
+.actions-cell {
+  text-align: right;
+}
+
+.actions-header {
+  text-align: right;
+}
+
+.actions-btns {
+  display: inline-flex;
+  gap: 8px;
+  align-items: center;
+  vertical-align: middle;
+}
+
+.icon-btn {
+  background: #b8cfce;
+  color: darkslategrey;
+  border: none;
+  border-radius: 50%;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.2s;
+  font-size: 1.2rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+.icon-btn:hover {
+  background: #7f8caa;
+  color: white;
+}
+
+.table-wrapper::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.table-wrapper::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 4px;
+}
+
+.table-wrapper::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
