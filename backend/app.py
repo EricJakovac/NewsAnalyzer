@@ -13,8 +13,24 @@ from theme_clusterer import cluster_themes
 app = Flask(__name__)
 CORS(app)
 
+# Dohvacanje articla po topicu iz mongodb
 
-# Dohvacanje articla po topicu
+
+@app.route("/articles/<topic>", methods=["GET"])
+def get_articles_by_topic(topic):
+    topic = topic.lower()
+
+    if topic not in collections_map:
+        return jsonify({"error": f"Topic '{topic}' not supported."}), 400
+
+    collection = collections_map[topic]
+
+    articles = list(collection.find({}, {"_id": 0}).sort("publishedAt", -1).limit(20))
+
+    return jsonify({"topic": topic, "articles": articles}), 200
+
+
+# Dohvacanje articla po topicu sa API-a
 @app.route("/fetch-articles", methods=["POST"])
 def fetch_articles_route():
     data = request.get_json()
