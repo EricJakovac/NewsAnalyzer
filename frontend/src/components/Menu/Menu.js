@@ -5,9 +5,11 @@ import { BiSolidParty } from "react-icons/bi";
 import { GiHealthNormal } from "react-icons/gi";
 import { AiFillExperiment } from "react-icons/ai";
 import { MdSportsBasketball } from "react-icons/md";
+import { MdPublic } from "react-icons/md"; // Example icon for General
 import "./Menu.css";
 
 const categoryIcons = {
+  General: <MdPublic className="menu-icon" size={22} />,
   Business: <MdBusinessCenter className="menu-icon" size={22} />,
   Entertainment: <BiSolidParty className="menu-icon" size={22} />,
   Health: <GiHealthNormal className="menu-icon" size={22} />,
@@ -15,10 +17,11 @@ const categoryIcons = {
   Sports: <MdSportsBasketball className="menu-icon" size={22} />,
 };
 
-function Menu({ onSelectMenu }) {
+function Menu({ onSelectMenu, selectedMenu }) {
   const newsCategories = [
+    "General",
     "Business",
-    "Entertainment",
+    "Entertainment", 
     "Health",
     "Science",
     "Sports",
@@ -28,11 +31,19 @@ function Menu({ onSelectMenu }) {
     onSelectMenu(category.toLowerCase());
   };
 
+  // Check if menu item is active
+  const isActive = (menuItem) => {
+    if (menuItem === "home") {
+      return selectedMenu === "home";
+    }
+    return selectedMenu === menuItem.toLowerCase();
+  };
+
   return (
     <menu>
       <ul id="mainMenu">
         <li
-          className="menu-item clickable"
+          className={`menu-item clickable ${isActive("home") ? "active" : ""}`}
           onClick={() => onSelectMenu("home")}
         >
           <GoHomeFill className="menu-icon" size={22} />
@@ -41,7 +52,7 @@ function Menu({ onSelectMenu }) {
         {newsCategories.map((category, index) => (
           <li
             key={index}
-            className="menu-item clickable"
+            className={`menu-item clickable ${isActive(category) ? "active" : ""}`}
             onClick={() => handleCategorySelect(category)}
           >
             {categoryIcons[category]}

@@ -1,0 +1,31 @@
+.custom-toast {
+  position: fixed;
+  top: 32px;
+  right: 32px;
+  background: #b8cfce;
+  color: #333;
+  padding: 16px 24px;
+  border-radius: 8px;
+  z-index: 9999;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+  font-size: 1rem;
+  display: flex;
+  align-items: center;
+  animation: fadeInOut 5s;
+}
+
+.toast-close-btn {
+  background: none;
+  border: none;
+  color: #333;
+  font-size: 1.2em;
+  margin-left: 16px;
+  cursor: pointer;
+}
+
+@keyframes fadeInOut {
+  0% { opacity: 0; transform: translateY(-20px);}
+  10% { opacity: 1; transform: translateY(0);}
+  90% { opacity: 1;}
+  100% { opacity: 0; transform: translateY(-20px);}
+}
