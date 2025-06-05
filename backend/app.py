@@ -1,17 +1,37 @@
-from collections_map import collections_map
+from collections_map import collections_map, top_headlines_collection
 from flask import Flask, jsonify, request
 from flask_cors import CORS
 from mongo import clusters_collection
+from news_classifier import classify_article_topic  # <-- Dodaj ovu funkciju
 from news_classifier import (
     detect_topic,
     predict_article_label,
     train_classifier_for_topic,
 )
-from news_fetcher import fetch_articles_by_topic
+from news_fetcher import fetch_articles_by_topic, fetch_top_headlines
 from theme_clusterer import cluster_themes
 
 app = Flask(__name__)
 CORS(app)
+
+
+# Dohvacanje top headlinesa s API
+@app.route("/fetch-top-headlines", methods=["POST"])
+def fetch_and_store_top_headlines():
+    articles = fetch_top_headlines()
+
+    if not articles:
+        return jsonify({"error": f"No top-headline articles fetched"}), 400
+
+    return jsonify({"message": f"Fetched and stored {len(articles)} top-headline articles"}), 200
+
+
+# Dohvacanje top headlinesa iz mongodb
+@app.route("/top-headlines", methods=["GET"])
+def get_top_headlines():
+    # Vraća sve headline članke, uključujući category polje
+    headlines = list(top_headlines_collection.find({}, {"_id": 0}))
+    return jsonify(headlines)
 
 
 # Dohvacanje articla po topicu iz mongodb

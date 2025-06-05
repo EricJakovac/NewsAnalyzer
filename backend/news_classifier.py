@@ -4,6 +4,8 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.naive_bayes import MultinomialNB
 from topic_labels import topic_labels
 
+TOPIC_LIST = ["business", "sports", "entertainment", "technology", "health", "science", "general"]
+
 
 def label_by_keywords(text, label_keywords):
     text_lower = text.lower()
@@ -20,17 +22,15 @@ def train_classifier_for_topic(topic):
         raise ValueError(f"No collection found for topic '{topic}'")
 
     collection = collections_map[topic]
-    articles = list(collection.find())
+    # Dohvati samo članke koji imaju ručno dodanu subkategoriju u polju 'category'
+    articles = list(collection.find({"subcategory": {"$exists": True}}))
 
     if not articles:
-        raise ValueError(f"No articles found for topic '{topic}'. Run fetch first.")
+        raise ValueError(f"No labeled articles found for topic '{topic}'. Label some articles first.")
 
-    if topic not in topic_labels:
-        raise ValueError(f"No labels defined for topic '{topic}'")
-
-    # Pripremi podatke
+    # Pripremi podatke za treniranje
     X = [a["title"] + " " + a.get("description", "") for a in articles]
-    y = [label_by_keywords(text, topic_labels[topic]) for text in X]
+    y = [a["subcategory"] for a in articles]  # koristi ručno dodane oznake
 
     # Treniraj model
     vectorizer = TfidfVectorizer(stop_words="english", max_features=1000)
@@ -54,9 +54,21 @@ def predict_article_label(text, topic):
 
 def detect_topic(text):
     text_lower = text.lower()
-    for topic, labels in topic_labels.items():
+    for topic in TOPIC_LIST:
+        labels = topic_labels.get(topic, {})
         for label, keywords in labels.items():
             for kw in keywords:
                 if kw.lower() in text_lower:
                     return topic
     return "general"
+
+
+def classify_article_topic(article):
+    text = article.get("title", "") + " " + (article.get("description") or "")
+    topic = detect_topic(text)
+    return topic
+
+
+def add_category_to_article(article):
+    article["category"] = classify_article_topic(article)
+    return article

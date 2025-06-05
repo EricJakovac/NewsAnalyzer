@@ -11,6 +11,7 @@ general_collection = db["general"]
 health_collection = db["health"]
 science_collection = db["science"]
 clusters_collection = db["clusters"]
+top_headlines_collection = db["top_headlines"]
 
 
 def test_mongo_connection():

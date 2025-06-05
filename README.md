@@ -36,11 +36,19 @@ Tech Stack:
 
 ___Za Napraviti___
 
-- Dodati preprocess i očistiti podatke
-- Home promjeniti da dohvaca i prikazuje podatke sa top-headlines
 - Napraviti pipeline (dohvacanje, ciscenje, spremanje, klasifikacija i prikaz)
+- Elastic trebam dodati to kada stignemo
 
 - Na analitics prikazati za svaki article njegovu klasifikaciju
-- Dodati gumb za dohvacanje articla (refresh) koji poziva pipeline
-- General tab sa general podacima
 - SearchBar i dodati ElasticSearch u kod, instalirati lokalno 
+
+
+___NAPRAVLJENO___
+
+- Dodao sam novi top_headlines_collection koji dohvacas iz baze sa http://127.0.0.1:5000/top-headlines, podaci imaju polje "category" koji oznacava klasifikaciju koju sam trenutno dodao rucno jer ne postoji jos model za to. Tako da mozes taj category prikazati u podacima. Fetch tih podataka jos ne moras stavljat jer cu dodati prvo automatsku klasifikaciju da bude lakse.
+
+
+- Sada kada se fetchaju podaci s topicom (trenutno samo sa sports topicom jer jedino on ima istreniran model) automatski se klasificiraju i kada ih dohvacas imaju polje "subcategory" koji ozncava klasifikaciju koju ces prikazat. Url za dohvacanje tih podataka ti ostaje isti samo imaju jedno polje vise.
+
+- Moram prvo dalje rucno dodati subcategory za ostale topice kako bih mogao istrenirati model za svaki topic koji ce to raditi sam.
+

@@ -6,6 +6,7 @@ from mongo import (
     science_collection,
     sports_collection,
     technology_collection,
+    top_headlines_collection,
 )
 
 collections_map = {
@@ -16,4 +17,5 @@ collections_map = {
     "health": health_collection,
     "science": science_collection,
     "general": general_collection,
+    "top": top_headlines_collection,
 }

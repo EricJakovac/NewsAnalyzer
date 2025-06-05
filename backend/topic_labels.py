@@ -13,6 +13,8 @@ topic_labels = {
         "Baseball": ["baseball", "mlb", "pitcher", "homerun", "bat", "strike", "yankees"],
         "Tennis": ["tennis", "grand slam", "wimbledon", "djokovic", "nadal", "federer", "us open"],
         "Motorsport": ["formula 1", "f1", "motogp", "racing", "grand prix", "verstappen", "leclerc"],
+        "Fight": ["boxing", "ufc", "mma", "knockout", "champion", "title fight", "conor mcgregor"],
+        "Sneakers": ["sneakers", "kicks", "jordan", "nike", "adidas", "limited edition", "collab", "puma"],
     },
     "entertainment": {
         "Movies": ["movie", "film", "cinema", "box office", "director", "actor", "oscars", "blockbuster"],
