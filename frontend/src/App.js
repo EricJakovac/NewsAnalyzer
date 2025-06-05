@@ -6,6 +6,7 @@ import {
   fetchArticles,
   fetchTopHeadlines,
   fetchArticlesByTopic,
+  searchArticles,
 } from "./api/NewsAPI";
 import { FiRefreshCcw } from "react-icons/fi";
 import Toast from "./components/Toast/Toast";
@@ -153,7 +154,7 @@ function App() {
     setTimeout(() => setToast({ show: false, message: "", type: "" }), 3000);
   };
 
-  // Handle search functionality
+  // Handle search functionality using elastic search
   const handleSearch = useCallback(async () => {
     if (!searchQuery.trim()) {
       loadArticles();
@@ -164,24 +165,11 @@ function App() {
       setLoading(true);
       setError(null);
 
-      let data;
+      const index = getCategoryFromMenu(selectedMenu);  // Dohvati indeks iz selektiranog taba
+      const results = await searchArticles(searchQuery, index);
 
-      const category = getCategoryFromMenu(selectedMenu);
-      data = await fetchArticles(category);
-
-      const filteredArticles = data.filter(
-        (article) =>
-          article.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          article.description
-            ?.toLowerCase()
-            .includes(searchQuery.toLowerCase()) ||
-          article.content?.toLowerCase().includes(searchQuery.toLowerCase())
-      );
-
-      setArticles(filteredArticles);
-      console.log(
-        `Found ${filteredArticles.length} articles matching "${searchQuery}"`
-      );
+      setArticles(results);
+      console.log(`Found ${results.length} articles matching "${searchQuery}" in index "${index}"`);
     } catch (err) {
       setError(err.message);
       console.error("Error searching articles:", err);
@@ -189,7 +177,8 @@ function App() {
     } finally {
       setLoading(false);
     }
-  }, [searchQuery, selectedMenu, getCategoryFromMenu, loadArticles]);
+  }, [searchQuery, selectedMenu, loadArticles, getCategoryFromMenu]);
+
 
   // Load articles when selectedMenu changes
   useEffect(() => {
@@ -211,6 +200,7 @@ function App() {
     return () => clearTimeout(timeoutId);
   }, [handleSearch]);
 
+
   const handleRowClick = (article) => {
     console.log("Selected article:", article);
   };
@@ -227,6 +217,32 @@ function App() {
     setTimeout(() => setToast({ show: false, message: "" }), 3000);
   };
 
+  // Debounce timeout ID
+  const [debounceTimeout, setDebounceTimeout] = useState(null);
+
+  // Funkcija koja se poziva na promjenu inputa
+  const onInputChange = (e) => {
+    const value = e.target.value;
+    setSearchQuery(value);
+
+    // Clear prethodni debounce timeout
+    if (debounceTimeout) clearTimeout(debounceTimeout);
+
+    // Postavi novi debounce timeout (npr. 500ms)
+    const timeoutId = setTimeout(() => {
+      handleSearch();
+    }, 500);
+
+    setDebounceTimeout(timeoutId);
+  };
+
+  // Očisti timeout kad se komponenta unmounta ili prije novog timeouta
+  useEffect(() => {
+    return () => {
+      if (debounceTimeout) clearTimeout(debounceTimeout);
+    };
+  }, [debounceTimeout]);
+
   return (
     <div className="App">
       <Menu onSelectMenu={handleMenuSelect} selectedMenu={selectedMenu} />
@@ -241,14 +257,13 @@ function App() {
           </p>
         </div>
 
-        <div className="search-container">
+        <div className="search-container" style={{ display: "flex", gap: "8px", marginBottom: "16px" }}>
           <input
             type="text"
-            placeholder={`Search ${getCategoryDisplayName(
-              selectedMenu
-            ).toLowerCase()} articles...`}
+            placeholder={`Search ${getCategoryDisplayName(selectedMenu).toLowerCase()} articles...`}
             value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            onChange={onInputChange}
+            style={{ flex: 1, padding: "8px", fontSize: "16px" }}
           />
           <button
             className="refresh-btn"
@@ -256,6 +271,7 @@ function App() {
             onClick={handleRefresh}
             disabled={refreshing || loading}
             type="button"
+            style={{ padding: "8px 12px", cursor: refreshing || loading ? "not-allowed" : "pointer" }}
           >
             <FiRefreshCcw
               size={20}
@@ -288,11 +304,11 @@ function App() {
                 <p>
                   {searchQuery.trim()
                     ? `No articles found for "${searchQuery}" in ${getCategoryDisplayName(
-                        selectedMenu
-                      ).toLowerCase()}.`
+                      selectedMenu
+                    ).toLowerCase()}.`
                     : `No ${getCategoryDisplayName(
-                        selectedMenu
-                      ).toLowerCase()} articles found.`}
+                      selectedMenu
+                    ).toLowerCase()} articles found.`}
                 </p>
                 {searchQuery.trim() && (
                   <button
@@ -325,9 +341,8 @@ function App() {
           </div>
 
           <div
-            className={`right-blocks info-block-animated${
-              showInfoBlock ? " visible" : ""
-            }`}
+            className={`right-blocks info-block-animated${showInfoBlock ? " visible" : ""
+              }`}
           >
             <div className="info-block placeholder">
               <h3>Article Details</h3>

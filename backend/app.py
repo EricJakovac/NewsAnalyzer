@@ -1,13 +1,9 @@
 from collections_map import collections_map, top_headlines_collection
+from elastic_search import es
 from flask import Flask, jsonify, request
 from flask_cors import CORS
 from mongo import clusters_collection
-from news_classifier import classify_article_topic  # <-- Dodaj ovu funkciju
-from news_classifier import (
-    detect_topic,
-    predict_article_label,
-    train_classifier_for_topic,
-)
+from news_classifier import train_classifier_for_topic, train_top_headlines_classifier
 from news_fetcher import fetch_articles_by_topic, fetch_top_headlines
 from theme_clusterer import cluster_themes
 
@@ -21,9 +17,26 @@ def fetch_and_store_top_headlines():
     articles = fetch_top_headlines()
 
     if not articles:
-        return jsonify({"error": f"No top-headline articles fetched"}), 400
+        return jsonify({"message": f"No top-headline articles fetched"}), 200
 
     return jsonify({"message": f"Fetched and stored {len(articles)} top-headline articles"}), 200
+
+
+# Dohvacanje articla po topicu sa API-a
+@app.route("/fetch-articles", methods=["POST"])
+def fetch_articles_route():
+    data = request.get_json()
+    topic = data.get("topic")
+
+    if not topic:
+        return jsonify({"error": "No topic provided"}), 400
+
+    articles = fetch_articles_by_topic(topic)
+
+    if not articles:
+        return jsonify({"message": f"No articles fetched for topic '{topic}'"}), 200
+
+    return jsonify({"message": f"Fetched and stored {len(articles)} '{topic}' articles"}), 200
 
 
 # Dohvacanje top headlinesa iz mongodb
@@ -31,6 +44,9 @@ def fetch_and_store_top_headlines():
 def get_top_headlines():
     # Vraća sve headline članke, uključujući category polje
     headlines = list(top_headlines_collection.find({}, {"_id": 0}))
+    if not headlines:
+        return jsonify({"message": "No top headlines found"}), 404
+
     return jsonify(headlines)
 
 
@@ -49,38 +65,7 @@ def get_articles_by_topic(topic):
     return jsonify({"topic": topic, "articles": articles}), 200
 
 
-# Dohvacanje articla po topicu sa API-a
-@app.route("/fetch-articles", methods=["POST"])
-def fetch_articles_route():
-    data = request.get_json()
-    topic = data.get("topic")
-
-    if not topic:
-        return jsonify({"error": "No topic provided"}), 400
-
-    articles = fetch_articles_by_topic(topic)
-
-    if not articles:
-        return jsonify({"error": f"No articles fetched for topic '{topic}'"}), 400
-
-    return jsonify({"message": f"Fetched and stored {len(articles)} '{topic}' articles"}), 200
-
-
-@app.route("/classify", methods=["POST"])
-def classify():
-    text = request.json.get("text", "")
-    if not text:
-        return jsonify({"error": "Field 'text' is required"}), 400
-
-    topic = detect_topic(text)
-
-    try:
-        label = predict_article_label(text, topic)
-        return jsonify({"topic": topic, "tech_type": label})
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
-
-
+# Treniranje modela za klasifikaciju članka po topicu
 @app.route("/train-classifier", methods=["POST"])
 def train():
     data = request.json
@@ -96,6 +81,41 @@ def train():
         return jsonify({"message": f"Model for topic '{topic}' trained successfully"})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
+
+# Treniranje modela za klasifikaciju top headlines
+@app.route("/train-top-headlines-classifier", methods=["POST"])
+def train_top_headlines():
+    try:
+        train_top_headlines_classifier()
+        return jsonify({"message": "Top-headlines classifier trained successfully"}), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+# ElasticSearch indeksiranje articla
+@app.route("/search", methods=["GET"])
+def search_articles():
+    query = request.args.get("q", "")
+    index = request.args.get("index")
+
+    if not query:
+        return jsonify({"error": "Query parameter 'q' is required"}), 400
+
+    if not index:
+        return jsonify({"error": "Query parameter 'index' is required"}), 400
+
+    body = {"query": {"multi_match": {"query": query, "fields": ["title^3", "description", "subcategory", "category"]}}}
+
+    try:
+        res = es.search(index=index, body=body)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+    hits = res["hits"]["hits"]
+    results = [hit["_source"] for hit in hits]
+
+    return jsonify({"results": results})
 
 
 @app.route("/clusters")

@@ -6,9 +6,12 @@ from collections_map import (
     top_headlines_collection,
 )
 from config import NEWS_API_KEY
-from news_classifier import (  # <-- Dodaj ovo
+from elastic_search import index_article_es
+from news_classifier import (
     classify_article_topic,
     predict_article_label,
+    train_classifier_for_topic,
+    train_top_headlines_classifier,
 )
 from newsapi import NewsApiClient
 
@@ -33,20 +36,27 @@ def fetch_articles_by_topic(topic):
         article["fetched_at"] = datetime.utcnow()
         article["topic"] = topic.lower()
 
-        # Predikcija subkategorije pomoću istreniranog modela
-        text = article.get("title", "") + " " + (article.get("description") or "")
-        try:
-            article["subcategory"] = predict_article_label(text, topic.lower())
-        except Exception as e:
-            print(f"Error predicting subcategory for article '{article.get('title', '')}': {e}")
-            article["subcategory"] = "Unknown"
+        if topic.lower() != "general":
+            # Predikcija subkategorije pomoću istreniranog modela samo ako nije 'general'
+            text = article.get("title", "") + " " + (article.get("description") or "")
+            try:
+                article["subcategory"] = predict_article_label(text, topic.lower())
+            except Exception as e:
+                print(f"Error predicting subcategory for article '{article.get('title', '')}': {e}")
+                article["subcategory"] = "Unknown"
 
         # Spremi u bazu s upsertom po URL-u
         result = collection.update_one({"url": article["url"]}, {"$setOnInsert": article}, upsert=True)
         if result.upserted_id:
             inserted_articles.append(article)
+            index_article_es(article)
 
     print(f"Stored {len(inserted_articles)} new '{topic}' articles in collection '{collection.name}'")
+
+    # Trenira model samo ako topic nije 'general'
+    if topic.lower() != "general":
+        train_classifier_for_topic(topic)
+
     return inserted_articles
 
 
@@ -66,8 +76,10 @@ def fetch_top_headlines():
         result = top_headlines_collection.update_one({"url": article["url"]}, {"$setOnInsert": article}, upsert=True)
         if result.upserted_id:
             inserted_articles.append(article)
+            index_article_es(article)
 
     print(f"Stored {len(inserted_articles)} new top headlines in collection '{top_headlines_collection.name}'")
+    train_top_headlines_classifier()
     return inserted_articles
 
 

@@ -36,3 +36,12 @@ export const fetchArticlesByTopic = async (topic) => {
   }
 };
 
+export async function searchArticles(query, index) {
+    const response = await fetch(`/search?q=${encodeURIComponent(query)}&index=${encodeURIComponent(index)}`);
+    if (!response.ok) {
+      throw new Error(`Search failed: ${response.statusText}`);
+    }
+    const data = await response.json();
+    return data.results;
+  }
+

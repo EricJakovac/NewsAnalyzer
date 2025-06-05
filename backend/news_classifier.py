@@ -1,5 +1,5 @@
 import joblib
-from collections_map import collections_map
+from collections_map import collections_map, top_headlines_collection
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.naive_bayes import MultinomialNB
 from topic_labels import topic_labels
@@ -29,8 +29,8 @@ def train_classifier_for_topic(topic):
         raise ValueError(f"No labeled articles found for topic '{topic}'. Label some articles first.")
 
     # Pripremi podatke za treniranje
-    X = [a["title"] + " " + a.get("description", "") for a in articles]
-    y = [a["subcategory"] for a in articles]  # koristi ručno dodane oznake
+    X = [(a.get("title", "") or "") + " " + (a.get("description", "") or "") for a in articles]
+    y = [a["subcategory"] for a in articles]
 
     # Treniraj model
     vectorizer = TfidfVectorizer(stop_words="english", max_features=1000)
@@ -41,6 +41,26 @@ def train_classifier_for_topic(topic):
     model_filename = f"{topic}_classifier.joblib"
     joblib.dump((vectorizer, clf), model_filename)
     print(f"Model for topic '{topic}' trained and saved as '{model_filename}'")
+
+
+def train_top_headlines_classifier():
+    collection = top_headlines_collection
+    articles = list(collection.find({"category": {"$exists": True}}))
+
+    if not articles:
+        raise ValueError("No labeled top-headline articles found with 'category' field.")
+
+    X = [(a.get("title", "") or "") + " " + (a.get("description", "") or "") for a in articles]
+    y = [a["category"] for a in articles]
+
+    vectorizer = TfidfVectorizer(stop_words="english", max_features=1000)
+    X_vec = vectorizer.fit_transform(X)
+
+    clf = MultinomialNB()
+    clf.fit(X_vec, y)
+
+    joblib.dump((vectorizer, clf), "top_headlines_classifier.joblib")
+    print("Top-headlines classifier trained and saved.")
 
 
 def predict_article_label(text, topic):
