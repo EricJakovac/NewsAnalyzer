@@ -2,25 +2,48 @@
   position: fixed;
   top: 32px;
   right: 32px;
-  background: #b8cfce;
-  color: #333;
+  color: #fff;
   padding: 16px 24px;
   border-radius: 8px;
   z-index: 9999;
   box-shadow: 0 4px 20px rgba(0,0,0,0.2);
   font-size: 1rem;
   display: flex;
-  align-items: center;
+  justify-content: space-between;
   animation: fadeInOut 5s;
+  min-width: 300px;
+}
+
+/* Success toast - green */
+.custom-toast.success {
+  background: #10b981;
+  border-left: 4px solid #059669;
+}
+
+/* Error toast - light red */
+.custom-toast.error {
+  background: #ef4444;
+  border-left: 4px solid #dc2626;
+}
+
+/* Info toast - blue */
+.custom-toast.info {
+  background: #3b82f6;
+  border-left: 4px solid #2563eb;
 }
 
 .toast-close-btn {
   background: none;
   border: none;
-  color: #333;
+  color: #fff;
   font-size: 1.2em;
   margin-left: 16px;
   cursor: pointer;
+  opacity: 0.8;
+}
+
+.toast-close-btn:hover {
+  opacity: 1;
 }
 
 @keyframes fadeInOut {

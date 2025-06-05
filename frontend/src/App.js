@@ -2,7 +2,11 @@ import { useState, useEffect, useCallback } from "react";
 import "./App.css";
 import Menu from "./components/Menu/Menu";
 import Table from "./components/Table/Table";
-import { fetchArticles } from "./api/NewsAPI";
+import {
+  fetchArticles,
+  fetchTopHeadlines,
+  fetchArticlesByTopic,
+} from "./api/NewsAPI";
 import { FiRefreshCcw } from "react-icons/fi";
 import Toast from "./components/Toast/Toast";
 
@@ -13,7 +17,8 @@ function App() {
   const [articles, setArticles] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [toast, setToast] = useState({ show: false, message: "" });
+  const [toast, setToast] = useState({ show: false, message: "", type: "" });
+  const [refreshing, setRefreshing] = useState(false); // NEW: for refresh loading state
 
   // Map menu selections to display names
   const getCategoryDisplayName = useCallback((menu) => {
@@ -25,6 +30,7 @@ function App() {
       health: "Health",
       science: "Science",
       sports: "Sports",
+      technology: "Technology",
     };
     return displayMap[menu] || "Home";
   }, []);
@@ -39,6 +45,7 @@ function App() {
       health: "Wellness updates and health breakthroughs",
       science: "Discoveries that change everything",
       sports: "Game-changing moments and athletic achievements",
+      technology: "Innovation and tech breakthroughs that matter",
     };
     return subtitleMap[menu] || "Stay informed, stay ahead";
   }, []);
@@ -46,13 +53,14 @@ function App() {
   // Map menu selections to API categories
   const getCategoryFromMenu = useCallback((menu) => {
     const categoryMap = {
-      home: "general",
+      home: "general", // home uses top headlines, but maps to general for DB
       general: "general",
       business: "business",
       entertainment: "entertainment",
       health: "health",
       science: "science",
       sports: "sports",
+      technology: "technology",
     };
     return categoryMap[menu] || "general";
   }, []);
@@ -62,9 +70,14 @@ function App() {
     try {
       setLoading(true);
       setError(null);
+
+      let data;
+
+      // For other categories, get from respective collections
       const category = getCategoryFromMenu(selectedMenu);
       console.log(`Loading articles for category: ${category}`);
-      const data = await fetchArticles(category, 50);
+      data = await fetchArticles(category);
+
       setArticles(data);
       console.log(`Loaded ${data.length} articles`);
     } catch (err) {
@@ -76,6 +89,70 @@ function App() {
     }
   }, [selectedMenu, getCategoryFromMenu]);
 
+  // Handle refresh - fetch fresh data from external API
+  const handleRefresh = useCallback(async () => {
+    setRefreshing(true);
+    setLoading(true);
+
+    try {
+      let result;
+
+      if (selectedMenu === "home") {
+        result = await fetchTopHeadlines();
+      } else {
+        const category = getCategoryFromMenu(selectedMenu);
+        result = await fetchArticlesByTopic(category);
+      }
+
+      // Try to load articles from DB after fetching new ones
+      try {
+        await loadArticles();
+
+        // Only show toast if both refresh and loadArticles succeed
+        const articleCount = extractArticleCount(result.message);
+
+        if (typeof articleCount === "number" && articleCount > 0) {
+          showSuccessToast(
+            `Successfully fetched ${articleCount} new articles!`
+          );
+        } else {
+          showInfoToast("You're up to date! No new articles found.");
+        }
+      } catch (err) {
+        showErrorToast(`Failed to load articles: ${err.message}`);
+      }
+    } catch (err) {
+      showErrorToast(`Failed to refresh: ${err.message}`);
+    } finally {
+      setRefreshing(false);
+      setLoading(false);
+    }
+  }, [selectedMenu, getCategoryFromMenu, loadArticles]);
+
+  // Helper function to extract article count from API response message
+  const extractArticleCount = (message) => {
+    if (!message) return 0;
+    // Extract number from messages like "Fetched and stored 33 top-headline articles"
+    const match = message.match(/(\d+)/);
+    return match ? parseInt(match[1], 10) : 0;
+  };
+
+  // Different toast types with custom styling
+  const showSuccessToast = (msg) => {
+    setToast({ show: true, message: msg, type: "success" });
+    setTimeout(() => setToast({ show: false, message: "", type: "" }), 3000);
+  };
+
+  const showErrorToast = (msg) => {
+    setToast({ show: true, message: msg, type: "error" });
+    setTimeout(() => setToast({ show: false, message: "", type: "" }), 4000); // Longer for errors
+  };
+
+  const showInfoToast = (msg) => {
+    setToast({ show: true, message: msg, type: "info" });
+    setTimeout(() => setToast({ show: false, message: "", type: "" }), 3000);
+  };
+
   // Handle search functionality
   const handleSearch = useCallback(async () => {
     if (!searchQuery.trim()) {
@@ -86,12 +163,12 @@ function App() {
     try {
       setLoading(true);
       setError(null);
-      const category = getCategoryFromMenu(selectedMenu);
-      console.log(`Searching for: "${searchQuery}" in category: ${category}`);
 
-      // For now, get all articles and filter on frontend
-      // Later you can implement backend search endpoint
-      const data = await fetchArticles(category, 100);
+      let data;
+
+      const category = getCategoryFromMenu(selectedMenu);
+      data = await fetchArticles(category);
+
       const filteredArticles = data.filter(
         (article) =>
           article.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -129,20 +206,19 @@ function App() {
 
     const timeoutId = setTimeout(() => {
       handleSearch();
-    }, 500); // 500ms debounce for search
+    }, 500);
 
     return () => clearTimeout(timeoutId);
   }, [handleSearch]);
 
   const handleRowClick = (article) => {
     console.log("Selected article:", article);
-    // You can implement article detail view here later
   };
 
   const handleMenuSelect = (menu) => {
     console.log("Menu selected:", menu);
     setSelectedMenu(menu);
-    setSearchQuery(""); // Clear search when changing categories
+    setSearchQuery("");
   };
 
   // Show toast for 3 seconds
@@ -156,7 +232,6 @@ function App() {
       <Menu onSelectMenu={handleMenuSelect} selectedMenu={selectedMenu} />
 
       <div className="main-content">
-        {/* Category Title */}
         <div className="category-header">
           <h1 className="category-title">
             {getCategoryDisplayName(selectedMenu)}
@@ -178,10 +253,16 @@ function App() {
           <button
             className="refresh-btn"
             title="Refresh"
-            onClick={() => showToast("Articles refreshed! (placeholder)")}
+            onClick={handleRefresh}
+            disabled={refreshing || loading}
             type="button"
           >
-            <FiRefreshCcw size={20} />
+            <FiRefreshCcw
+              size={20}
+              style={{
+                animation: refreshing ? "spin 1s linear infinite" : "none",
+              }}
+            />
           </button>
         </div>
 
@@ -191,25 +272,18 @@ function App() {
           <div
             className={`table-container${showInfoBlock ? " table-shrink" : ""}`}
           >
-            {loading && (
+            {loading ? (
               <div className="loading">
                 <p>
                   Loading {getCategoryDisplayName(selectedMenu).toLowerCase()}{" "}
                   articles...
                 </p>
               </div>
-            )}
-
-            {error && (
+            ) : error ? (
               <div className="error">
-                <p>Error: {error}</p>
-                <button onClick={loadArticles} className="retry-btn">
-                  Retry
-                </button>
+                <p>Can't load data. Please refresh again.</p>
               </div>
-            )}
-
-            {!loading && !error && articles.length === 0 && (
+            ) : articles.length === 0 ? (
               <div className="no-results">
                 <p>
                   {searchQuery.trim()
@@ -229,9 +303,7 @@ function App() {
                   </button>
                 )}
               </div>
-            )}
-
-            {!loading && !error && articles.length > 0 && (
+            ) : (
               <>
                 {searchQuery.trim() && (
                   <div className="search-results-info">
@@ -252,7 +324,6 @@ function App() {
             )}
           </div>
 
-          {/* Info block is always rendered for smooth animation */}
           <div
             className={`right-blocks info-block-animated${
               showInfoBlock ? " visible" : ""
@@ -274,7 +345,8 @@ function App() {
       {toast.show && (
         <Toast
           message={toast.message}
-          onClose={() => setToast({ show: false, message: "" })}
+          type={toast.type}
+          onClose={() => setToast({ show: false, message: "", type: "" })}
         />
       )}
     </div>

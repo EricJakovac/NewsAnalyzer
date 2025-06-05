@@ -5,7 +5,8 @@ import { BiSolidParty } from "react-icons/bi";
 import { GiHealthNormal } from "react-icons/gi";
 import { AiFillExperiment } from "react-icons/ai";
 import { MdSportsBasketball } from "react-icons/md";
-import { MdPublic } from "react-icons/md"; // Example icon for General
+import { MdPublic } from "react-icons/md";
+import { FaComputer } from "react-icons/fa6"; // Add this import
 import "./Menu.css";
 
 const categoryIcons = {
@@ -15,6 +16,7 @@ const categoryIcons = {
   Health: <GiHealthNormal className="menu-icon" size={22} />,
   Science: <AiFillExperiment className="menu-icon" size={22} />,
   Sports: <MdSportsBasketball className="menu-icon" size={22} />,
+  Technology: <FaComputer className="menu-icon" size={22} />, // Add this line
 };
 
 function Menu({ onSelectMenu, selectedMenu }) {
@@ -25,6 +27,7 @@ function Menu({ onSelectMenu, selectedMenu }) {
     "Health",
     "Science",
     "Sports",
+    "Technology", // Add this line
   ];
 
   const handleCategorySelect = (category) => {
