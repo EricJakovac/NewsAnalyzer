@@ -45,3 +45,13 @@ export async function searchArticles(query, index) {
     return data.results;
   }
 
+  // Get top headlines from database (for HOME tab)
+export const getTopHeadlines = async () => {
+  try {
+    const response = await axios.get(`${BASE_URL}/top-headlines`);
+    return response.data; // Backend vraća direktno array, ne { articles: [...] }
+  } catch (error) {
+    console.error("Error getting top headlines:", error);
+    throw error;
+  }
+};

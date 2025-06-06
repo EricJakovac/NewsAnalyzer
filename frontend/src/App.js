@@ -2,13 +2,14 @@ import { useState, useEffect, useCallback } from "react";
 import "./App.css";
 import Menu from "./components/Menu/Menu";
 import Table from "./components/Table/Table";
+import Search from "./components/Search/Search";
 import {
   fetchArticles,
   fetchTopHeadlines,
   fetchArticlesByTopic,
   searchArticles,
+  getTopHeadlines,
 } from "./api/NewsAPI";
-import { FiRefreshCcw } from "react-icons/fi";
 import Toast from "./components/Toast/Toast";
 
 function App() {
@@ -19,9 +20,10 @@ function App() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [toast, setToast] = useState({ show: false, message: "", type: "" });
-  const [refreshing, setRefreshing] = useState(false); // NEW: for refresh loading state
+  const [refreshing, setRefreshing] = useState(false);
+  const [selectedArticle, setSelectedArticle] = useState(null);
 
-  // Map menu selections to display names
+  // Display names for categories
   const getCategoryDisplayName = useCallback((menu) => {
     const displayMap = {
       home: "Top Headlines",
@@ -36,7 +38,7 @@ function App() {
     return displayMap[menu] || "Home";
   }, []);
 
-  // Map menu selections to catchy subtitles
+  // Subtitles for categories
   const getCategorySubtitle = useCallback((menu) => {
     const subtitleMap = {
       home: "Breaking stories that shape your world today",
@@ -51,10 +53,10 @@ function App() {
     return subtitleMap[menu] || "Stay informed, stay ahead";
   }, []);
 
-  // Map menu selections to API categories
+  // API categories
   const getCategoryFromMenu = useCallback((menu) => {
     const categoryMap = {
-      home: "general", // home uses top headlines, but maps to general for DB
+      home: "general",
       general: "general",
       business: "business",
       entertainment: "entertainment",
@@ -74,10 +76,16 @@ function App() {
 
       let data;
 
-      // For other categories, get from respective collections
-      const category = getCategoryFromMenu(selectedMenu);
-      console.log(`Loading articles for category: ${category}`);
-      data = await fetchArticles(category);
+      if (selectedMenu === "home") {
+        // Za HOME tab koristi top headlines iz baze
+        console.log("Loading top headlines from database");
+        data = await getTopHeadlines();
+      } else {
+        // Za ostale tabove koristi standardni endpoint
+        const category = getCategoryFromMenu(selectedMenu);
+        console.log(`Loading articles for category: ${category}`);
+        data = await fetchArticles(category);
+      }
 
       setArticles(data);
       console.log(`Loaded ${data.length} articles`);
@@ -90,28 +98,44 @@ function App() {
     }
   }, [selectedMenu, getCategoryFromMenu]);
 
-  // Handle refresh - fetch fresh data from external API
+  // Helper: extract article count from backend response
+  const extractArticleCount = (message) => {
+    if (!message) return 0;
+    const match = message.match(/(\d+)/);
+    return match ? parseInt(match[1], 10) : 0;
+  };
+
+  // Toast helpers
+  const showSuccessToast = (msg) => {
+    setToast({ show: true, message: msg, type: "success" });
+    setTimeout(() => setToast({ show: false, message: "", type: "" }), 3000);
+  };
+  const showErrorToast = (msg) => {
+    setToast({ show: true, message: msg, type: "error" });
+    setTimeout(() => setToast({ show: false, message: "", type: "" }), 4000);
+  };
+  const showInfoToast = (msg) => {
+    setToast({ show: true, message: msg, type: "info" });
+    setTimeout(() => setToast({ show: false, message: "", type: "" }), 3000);
+  };
+
+  // Refresh handler
   const handleRefresh = useCallback(async () => {
     setRefreshing(true);
     setLoading(true);
-
+    setShowInfoBlock(false);
+    setSelectedArticle(null);
     try {
       let result;
-
       if (selectedMenu === "home") {
         result = await fetchTopHeadlines();
       } else {
         const category = getCategoryFromMenu(selectedMenu);
         result = await fetchArticlesByTopic(category);
       }
-
-      // Try to load articles from DB after fetching new ones
       try {
         await loadArticles();
-
-        // Only show toast if both refresh and loadArticles succeed
         const articleCount = extractArticleCount(result.message);
-
         if (typeof articleCount === "number" && articleCount > 0) {
           showSuccessToast(
             `Successfully fetched ${articleCount} new articles!`
@@ -130,118 +154,87 @@ function App() {
     }
   }, [selectedMenu, getCategoryFromMenu, loadArticles]);
 
-  // Helper function to extract article count from API response message
-  const extractArticleCount = (message) => {
-    if (!message) return 0;
-    // Extract number from messages like "Fetched and stored 33 top-headline articles"
-    const match = message.match(/(\d+)/);
-    return match ? parseInt(match[1], 10) : 0;
-  };
-
-  // Different toast types with custom styling
-  const showSuccessToast = (msg) => {
-    setToast({ show: true, message: msg, type: "success" });
-    setTimeout(() => setToast({ show: false, message: "", type: "" }), 3000);
-  };
-
-  const showErrorToast = (msg) => {
-    setToast({ show: true, message: msg, type: "error" });
-    setTimeout(() => setToast({ show: false, message: "", type: "" }), 4000); // Longer for errors
-  };
-
-  const showInfoToast = (msg) => {
-    setToast({ show: true, message: msg, type: "info" });
-    setTimeout(() => setToast({ show: false, message: "", type: "" }), 3000);
-  };
-
-  // Handle search functionality using elastic search
+  // Update handleSearch to accept a value
   const handleSearch = useCallback(async () => {
     if (!searchQuery.trim()) {
       loadArticles();
       return;
     }
-
     try {
       setLoading(true);
       setError(null);
 
-      const index = getCategoryFromMenu(selectedMenu);  // Dohvati indeks iz selektiranog taba
-      const results = await searchArticles(searchQuery, index);
-
-      setArticles(results);
-      console.log(`Found ${results.length} articles matching "${searchQuery}" in index "${index}"`);
+      let data;
+      if (selectedMenu === "home") {
+        data = await getTopHeadlines();
+        const filteredArticles = data.filter(
+          (article) =>
+            article.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            article.description
+              ?.toLowerCase()
+              .includes(searchQuery.toLowerCase()) ||
+            article.content?.toLowerCase().includes(searchQuery.toLowerCase())
+        );
+        setArticles(filteredArticles);
+      } else {
+        const index = getCategoryFromMenu(selectedMenu);
+        const results = await searchArticles(searchQuery, index);
+        setArticles(results);
+      }
     } catch (err) {
       setError(err.message);
-      console.error("Error searching articles:", err);
       setArticles([]);
     } finally {
       setLoading(false);
     }
   }, [searchQuery, selectedMenu, loadArticles, getCategoryFromMenu]);
 
+  // Debounced search input
+  const [debounceTimeout, setDebounceTimeout] = useState(null);
 
-  // Load articles when selectedMenu changes
+  const onInputChange = (e) => {
+    setSearchQuery(e.target.value);
+  };
+
+  useEffect(() => {
+    return () => {
+      if (debounceTimeout) clearTimeout(debounceTimeout);
+    };
+  }, [debounceTimeout]);
+
+  // Clear search input and show all articles
+  const handleClear = () => {
+    setSearchQuery("");
+    loadArticles();
+  };
+
+  // Load articles on tab change or when search is cleared
   useEffect(() => {
     if (!searchQuery.trim()) {
       loadArticles();
     }
   }, [loadArticles, searchQuery]);
 
-  // Handle search with debouncing
-  useEffect(() => {
-    if (!searchQuery.trim()) {
-      return;
-    }
-
-    const timeoutId = setTimeout(() => {
-      handleSearch();
-    }, 500);
-
-    return () => clearTimeout(timeoutId);
-  }, [handleSearch]);
-
-
   const handleRowClick = (article) => {
-    console.log("Selected article:", article);
+    if (
+      selectedArticle &&
+      selectedArticle.url === article.url &&
+      showInfoBlock
+    ) {
+      setShowInfoBlock(false);
+      setSelectedArticle(null);
+    } else {
+      setSelectedArticle(article);
+      setShowInfoBlock(true);
+    }
   };
 
   const handleMenuSelect = (menu) => {
-    console.log("Menu selected:", menu);
     setSelectedMenu(menu);
     setSearchQuery("");
+    setShowInfoBlock(false);
+    setSelectedArticle(null);
   };
-
-  // Show toast for 3 seconds
-  const showToast = (msg) => {
-    setToast({ show: true, message: msg });
-    setTimeout(() => setToast({ show: false, message: "" }), 3000);
-  };
-
-  // Debounce timeout ID
-  const [debounceTimeout, setDebounceTimeout] = useState(null);
-
-  // Funkcija koja se poziva na promjenu inputa
-  const onInputChange = (e) => {
-    const value = e.target.value;
-    setSearchQuery(value);
-
-    // Clear prethodni debounce timeout
-    if (debounceTimeout) clearTimeout(debounceTimeout);
-
-    // Postavi novi debounce timeout (npr. 500ms)
-    const timeoutId = setTimeout(() => {
-      handleSearch();
-    }, 500);
-
-    setDebounceTimeout(timeoutId);
-  };
-
-  // Očisti timeout kad se komponenta unmounta ili prije novog timeouta
-  useEffect(() => {
-    return () => {
-      if (debounceTimeout) clearTimeout(debounceTimeout);
-    };
-  }, [debounceTimeout]);
 
   return (
     <div className="App">
@@ -257,30 +250,19 @@ function App() {
           </p>
         </div>
 
-        <div className="search-container" style={{ display: "flex", gap: "8px", marginBottom: "16px" }}>
-          <input
-            type="text"
-            placeholder={`Search ${getCategoryDisplayName(selectedMenu).toLowerCase()} articles...`}
-            value={searchQuery}
-            onChange={onInputChange}
-            style={{ flex: 1, padding: "8px", fontSize: "16px" }}
-          />
-          <button
-            className="refresh-btn"
-            title="Refresh"
-            onClick={handleRefresh}
-            disabled={refreshing || loading}
-            type="button"
-            style={{ padding: "8px 12px", cursor: refreshing || loading ? "not-allowed" : "pointer" }}
-          >
-            <FiRefreshCcw
-              size={20}
-              style={{
-                animation: refreshing ? "spin 1s linear infinite" : "none",
-              }}
-            />
-          </button>
-        </div>
+        <Search
+          value={searchQuery}
+          onInputChange={onInputChange}
+          onSearch={handleSearch} // <-- pass this prop
+          onRefresh={handleRefresh}
+          loading={loading}
+          refreshing={refreshing}
+          placeholder={`Search ${getCategoryDisplayName(
+            selectedMenu
+          ).toLowerCase()} articles...`}
+          onClear={handleClear}
+          autoFocus={true}
+        />
 
         <div
           className={`content-wrapper${showInfoBlock ? " gap-visible" : ""}`}
@@ -304,20 +286,12 @@ function App() {
                 <p>
                   {searchQuery.trim()
                     ? `No articles found for "${searchQuery}" in ${getCategoryDisplayName(
-                      selectedMenu
-                    ).toLowerCase()}.`
+                        selectedMenu
+                      ).toLowerCase()}.`
                     : `No ${getCategoryDisplayName(
-                      selectedMenu
-                    ).toLowerCase()} articles found.`}
+                        selectedMenu
+                      ).toLowerCase()} articles found.`}
                 </p>
-                {searchQuery.trim() && (
-                  <button
-                    onClick={() => setSearchQuery("")}
-                    className="clear-search-btn"
-                  >
-                    Clear search
-                  </button>
-                )}
               </div>
             ) : (
               <>
@@ -334,25 +308,101 @@ function App() {
                 <Table
                   data={articles}
                   onRowClick={handleRowClick}
-                  onShowInfoBlock={() => setShowInfoBlock(true)}
+                  showAdditionalButtons={!showInfoBlock}
                 />
               </>
             )}
           </div>
 
           <div
-            className={`right-blocks info-block-animated${showInfoBlock ? " visible" : ""
-              }`}
+            className={`right-blocks info-block-animated${
+              showInfoBlock ? " visible" : ""
+            }`}
           >
-            <div className="info-block placeholder">
-              <h3>Article Details</h3>
-              <p>Select an article to view details here.</p>
-              <button
-                className="close-info-btn"
-                onClick={() => setShowInfoBlock(false)}
-              >
-                Close
-              </button>
+            <div className="info-block">
+              {selectedArticle ? (
+                <>
+                  <div className="article-header">
+                    <h3>Article Details</h3>
+                    <button
+                      className="close-info-btn"
+                      onClick={() => {
+                        setShowInfoBlock(false);
+                        setSelectedArticle(null);
+                      }}
+                    >
+                      ×
+                    </button>
+                  </div>
+
+                  <div className="article-content">
+                    <div className="article-field">
+                      <strong>Title:</strong>
+                      <p>{selectedArticle.title}</p>
+                    </div>
+
+                    <div className="article-field">
+                      <strong>Category:</strong>
+                      <span className="category-tag">
+                        {
+                          selectedMenu === "home"
+                            ? selectedArticle.category || "General" // Top headlines use 'category' field
+                            : getCategoryDisplayName(selectedMenu) // Regular topics use menu name
+                        }
+                      </span>
+                    </div>
+
+                    {selectedMenu !== "home" && (
+                      <div className="article-field">
+                        <strong>Subcategory:</strong>
+                        <span className="subcategory-tag">
+                          {selectedArticle.subcategory || "Other"}
+                        </span>
+                      </div>
+                    )}
+
+                    <div className="article-field">
+                      <strong>Description:</strong>
+                      <p>
+                        {selectedArticle.description ||
+                          "No description available"}
+                      </p>
+                    </div>
+
+                    <div className="article-field">
+                      <strong>Published:</strong>
+                      <p>
+                        {new Date(
+                          selectedArticle.publishedAt
+                        ).toLocaleDateString()}
+                      </p>
+                    </div>
+
+                    <div className="article-field">
+                      <strong>Source:</strong>
+                      <a
+                        href={selectedArticle.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="source-link"
+                      >
+                        Read Full Article →
+                      </a>
+                    </div>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <h3>Article Details</h3>
+                  <p>Select an article to view details here.</p>
+                  <button
+                    className="close-info-btn"
+                    onClick={() => setShowInfoBlock(false)}
+                  >
+                    Close
+                  </button>
+                </>
+              )}
             </div>
           </div>
         </div>

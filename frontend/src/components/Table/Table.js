@@ -6,25 +6,27 @@ const Table = ({ data, onRowClick, onShowInfoBlock }) => {
   // Helper function to format date
   const formatDate = (dateString) => {
     try {
-      return new Date(dateString).toLocaleDateString('en-US', {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric'
+      return new Date(dateString).toLocaleDateString("en-US", {
+        year: "numeric",
+        month: "short",
+        day: "numeric",
       });
     } catch {
-      return 'N/A';
+      return "N/A";
     }
   };
 
   // Helper function to extract country/source
   const getSource = (article) => {
-    return article.source?.name || 'Unknown Source';
+    return article.source?.name || "Unknown Source";
   };
 
   // Helper function to truncate text
   const truncateText = (text, maxLength = 100) => {
-    if (!text) return 'N/A';
-    return text.length > maxLength ? text.substring(0, maxLength) + '...' : text;
+    if (!text) return "N/A";
+    return text.length > maxLength
+      ? text.substring(0, maxLength) + "..."
+      : text;
   };
 
   return (
@@ -32,12 +34,15 @@ const Table = ({ data, onRowClick, onShowInfoBlock }) => {
       <table>
         <thead>
           <tr>
-            <th style={{ width: '5%' }}>No.</th> {/* Novi stupac za redni broj */}
-            <th style={{ width: '30%' }}>Article Title</th>
-            <th style={{ width: '20%' }}>Source</th>
-            <th style={{ width: '15%' }}>Author</th>
-            <th style={{ width: '15%' }}>Date</th>
-            <th className="actions-header" style={{ width: '15%' }}>Actions</th>
+            <th style={{ width: "5%" }}>No.</th>{" "}
+            {/* Novi stupac za redni broj */}
+            <th style={{ width: "30%" }}>Article Title</th>
+            <th style={{ width: "20%" }}>Source</th>
+            <th style={{ width: "15%" }}>Author</th>
+            <th style={{ width: "15%" }}>Date</th>
+            <th className="actions-header" style={{ width: "15%" }}>
+              Actions
+            </th>
           </tr>
         </thead>
         <tbody>
@@ -46,7 +51,7 @@ const Table = ({ data, onRowClick, onShowInfoBlock }) => {
               <td>{index + 1}</td> {/* Redni broj */}
               <td title={item.title}>{truncateText(item.title, 80)}</td>
               <td>{getSource(item)}</td>
-              <td>{item.author || 'N/A'}</td>
+              <td>{item.author || "N/A"}</td>
               <td>{formatDate(item.publishedAt || item.date)}</td>
               <td className="actions-cell">
                 <span className="actions-btns">
@@ -57,13 +62,7 @@ const Table = ({ data, onRowClick, onShowInfoBlock }) => {
                   >
                     <GoEye size={20} />
                   </button>
-                  <button
-                    className="icon-btn"
-                    onClick={onShowInfoBlock}
-                    title="Show Info Block"
-                  >
-                    <GoGraph size={20} />
-                  </button>
+                  {/* Graph button removed */}
                 </span>
               </td>
             </tr>
