@@ -43,7 +43,7 @@ def fetch_articles_route():
 @app.route("/top-headlines", methods=["GET"])
 def get_top_headlines():
     # Vraća sve headline članke, uključujući category polje
-    headlines = list(top_headlines_collection.find({}, {"_id": 0}))
+    headlines = list(top_headlines_collection.find({"category": {"$exists": True}}, {"_id": 0}))
     if not headlines:
         return jsonify({"message": "No top headlines found"}), 404
 
@@ -60,7 +60,12 @@ def get_articles_by_topic(topic):
 
     collection = collections_map[topic]
 
-    articles = list(collection.find({}, {"_id": 0}).sort("publishedAt", -1).limit(20))
+    if topic == "general":
+        query_filter = {}
+    else:
+        query_filter = {"subcategory": {"$exists": True}}
+
+    articles = list(collection.find(query_filter, {"_id": 0}).sort("publishedAt", -1).limit(500))
 
     return jsonify({"topic": topic, "articles": articles}), 200
 
@@ -116,6 +121,98 @@ def search_articles():
     results = [hit["_source"] for hit in hits]
 
     return jsonify({"results": results})
+
+
+# Dohvacanje articla s subcategory za vizualizaciju
+@app.route("/subcategory-stats")
+def subcategory_stats():
+    topic = request.args.get("topic")
+    print("TOPIC:", topic)
+
+    if not topic:
+        return jsonify({"error": "Query parameter 'topic' is required"}), 400
+
+    collection = collections_map.get(topic.lower())
+    print("COLLECTION:", collection)
+
+    if collection is None:
+        return jsonify({"error": f"No collection found for topic '{topic}'"}), 404
+
+    pipeline = [
+        {"$match": {"subcategory": {"$exists": True, "$ne": None, "$ne": ""}}},
+        {"$group": {"_id": "$subcategory", "count": {"$sum": 1}}},
+        {"$sort": {"count": -1}},
+        {"$limit": 10},
+    ]
+
+    try:
+        agg_result = list(collection.aggregate(pipeline))
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+    data = [{"subcategory": doc["_id"], "count": doc["count"]} for doc in agg_result]
+    return jsonify(data)
+
+
+# Dohvacanje articla po subcategory za filtriranje u tablici
+@app.route("/articles-by-subcategory")
+def articles_by_subcategory():
+    subcategory = request.args.get("subcategory")
+
+    if not subcategory:
+        return jsonify({"error": "Query parameter 'subcategory' is required"}), 400
+
+    all_articles = []
+    try:
+        for collection in collections_map.values():
+            articles = list(collection.find({"subcategory": subcategory}, {"_id": 0}).sort("publishedAt", -1).limit(50))
+            all_articles.extend(articles)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+    # Opcionalno: sortiraj sve zajedno po datumu i ograniči broj rezultata
+    all_articles.sort(key=lambda x: x.get("publishedAt", "-1"), reverse=True)
+    all_articles = all_articles[:100]
+
+    return jsonify(all_articles)
+
+
+# Dohvacanje articla s category za vizualizaciju
+@app.route("/category-stats")
+def category_stats():
+    try:
+        pipeline = [
+            {"$match": {"category": {"$exists": True, "$ne": None, "$ne": ""}}},
+            {"$group": {"_id": "$category", "count": {"$sum": 1}}},
+            {"$sort": {"count": -1}},
+            {"$limit": 10},
+        ]
+        agg_result = list(top_headlines_collection.aggregate(pipeline))
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+    data = [{"category": doc["_id"], "count": doc["count"]} for doc in agg_result]
+
+    return jsonify(data)
+
+
+# Dohvacanje articla po category za filtriranje u tablici
+@app.route("/articles-by-category")
+def articles_by_category():
+    all_articles = []
+    try:
+        for collection in collections_map.values():
+            # Dohvati članke koji imaju polje 'category' (bilo koja vrijednost)
+            articles = list(collection.find({"category": {"$exists": True}}, {"_id": 0}).sort("publishedAt", -1).limit(50))
+            all_articles.extend(articles)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+    # Opcionalno: sortiraj sve zajedno po datumu i ograniči broj rezultata
+    all_articles.sort(key=lambda x: x.get("publishedAt", "-1"), reverse=True)
+    all_articles = all_articles[:100]
+
+    return jsonify(all_articles)
 
 
 @app.route("/clusters")

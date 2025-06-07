@@ -2,7 +2,7 @@ import React from "react";
 import { GoEye, GoGraph } from "react-icons/go";
 import "./Table.css";
 
-const Table = ({ data, onRowClick, onShowInfoBlock }) => {
+const Table = ({ data = [], onRowClick, onShowInfoBlock }) => {
   // Helper function to format date
   const formatDate = (dateString) => {
     try {

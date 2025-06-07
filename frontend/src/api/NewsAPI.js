@@ -36,14 +36,18 @@ export const fetchArticlesByTopic = async (topic) => {
   }
 };
 
-export async function searchArticles(query, index) {
-    const response = await fetch(`/search?q=${encodeURIComponent(query)}&index=${encodeURIComponent(index)}`);
-    if (!response.ok) {
-      throw new Error(`Search failed: ${response.statusText}`);
-    }
-    const data = await response.json();
-    return data.results;
+export const searchArticles = async (query, index) => {
+  try {
+    const response = await axios.get(`${BASE_URL}/search`, {
+      params: { q: query, index: index }
+    });
+    return response.data.results;
+  } catch (error) {
+    console.error("Error searching articles:", error);
+    throw error;
   }
+};
+
 
   // Get top headlines from database (for HOME tab)
 export const getTopHeadlines = async () => {

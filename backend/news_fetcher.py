@@ -43,7 +43,6 @@ def fetch_articles_by_topic(topic):
                 article["subcategory"] = predict_article_label(text, topic.lower())
             except Exception as e:
                 print(f"Error predicting subcategory for article '{article.get('title', '')}': {e}")
-                article["subcategory"] = "Unknown"
 
         # Spremi u bazu s upsertom po URL-u
         result = collection.update_one({"url": article["url"]}, {"$setOnInsert": article}, upsert=True)

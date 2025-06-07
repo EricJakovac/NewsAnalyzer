@@ -14,19 +14,22 @@
     "react-icons": "^5.5.0",
     "react-leaflet": "^5.0.0",
     "react-scripts": "^5.0.1",
+    "recharts": "^2.15.3",
     "web-vitals": "^2.1.4"
   },
   "devDependencies": {
     "concurrently": "^8.2.2"
   },
   "scripts": {
-    "start": "react-scripts --openssl-legacy-provider start",
-    "start-backend": "cd ../backend && python app.py",
-    "dev": "concurrently -k \"npm run start\" \"npm run start-backend\"",
-    "build": "react-scripts --openssl-legacy-provider build",
-    "test": "react-scripts test",
-    "eject": "react-scripts eject",
-    "setup": "python -m venv ..\\venv && powershell -Command \"& ..\\venv\\Scripts\\python.exe -m pip install -r ..\\backend\\requirements.txt\""
+  "install-frontend": "npm install",
+  "install-backend": "python -m pip install -r ../backend/requirements.txt",
+  "start": "react-scripts --openssl-legacy-provider start",
+  "start-backend": "cd ../backend && python app.py",
+  "dev": "concurrently -k \"npm run install-frontend && npm run start\" \"npm run install-backend && npm run start-backend\"",
+  "build": "react-scripts --openssl-legacy-provider build",
+  "test": "react-scripts test",
+  "eject": "react-scripts eject",
+  "setup": "python -m venv ..\\venv && powershell -Command \"& ..\\venv\\Scripts\\python.exe -m pip install -r ..\\backend\\requirements.txt\""
   },
   "proxy": "http://localhost:5000",
   "eslintConfig": {

@@ -11,6 +11,8 @@ import {
   getTopHeadlines,
 } from "./api/NewsAPI";
 import Toast from "./components/Toast/Toast";
+import SubcategoryChart from "./components/Charts/SubcategoryChart";
+import CategoryChart from "./components/Charts/CategoryChart";
 
 function App() {
   const [selectedMenu, setSelectedMenu] = useState("home");
@@ -22,6 +24,17 @@ function App() {
   const [toast, setToast] = useState({ show: false, message: "", type: "" });
   const [refreshing, setRefreshing] = useState(false);
   const [selectedArticle, setSelectedArticle] = useState(null);
+
+  // List of tabs that have subcategories and should show the chart
+  const tabsWithSubcategory = [
+    "business",
+    "entertainment",
+    "health",
+    "science",
+    "sports",
+    "technology",
+    "general",
+  ];
 
   // Display names for categories
   const getCategoryDisplayName = useCallback((menu) => {
@@ -253,7 +266,7 @@ function App() {
         <Search
           value={searchQuery}
           onInputChange={onInputChange}
-          onSearch={handleSearch} // <-- pass this prop
+          onSearch={handleSearch}
           onRefresh={handleRefresh}
           loading={loading}
           refreshing={refreshing}
@@ -263,6 +276,19 @@ function App() {
           onClear={handleClear}
           autoFocus={true}
         />
+
+        {/* Show chart for tabs with subcategories except for topic "general" */}
+        {tabsWithSubcategory.includes(selectedMenu) && selectedMenu !== "general" && !searchQuery.trim() && (
+          <div className="subcategory-chart-wrapper">
+            <SubcategoryChart topic={selectedMenu} />
+          </div>
+        )}
+
+        {!tabsWithSubcategory.includes(selectedMenu) && !searchQuery.trim() && (
+          <div className="category-chart-wrapper">
+            <CategoryChart />
+          </div>
+        )}
 
         <div
           className={`content-wrapper${showInfoBlock ? " gap-visible" : ""}`}
@@ -286,11 +312,11 @@ function App() {
                 <p>
                   {searchQuery.trim()
                     ? `No articles found for "${searchQuery}" in ${getCategoryDisplayName(
-                        selectedMenu
-                      ).toLowerCase()}.`
+                      selectedMenu
+                    ).toLowerCase()}.`
                     : `No ${getCategoryDisplayName(
-                        selectedMenu
-                      ).toLowerCase()} articles found.`}
+                      selectedMenu
+                    ).toLowerCase()} articles found.`}
                 </p>
               </div>
             ) : (
@@ -315,9 +341,8 @@ function App() {
           </div>
 
           <div
-            className={`right-blocks info-block-animated${
-              showInfoBlock ? " visible" : ""
-            }`}
+            className={`right-blocks info-block-animated${showInfoBlock ? " visible" : ""
+              }`}
           >
             <div className="info-block">
               {selectedArticle ? (
@@ -331,7 +356,6 @@ function App() {
                         setSelectedArticle(null);
                       }}
                     >
-                      ×
                     </button>
                   </div>
 

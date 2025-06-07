@@ -3,6 +3,7 @@ import hashlib
 from collections_map import collections_map
 from config import MONGO_URI
 from elasticsearch import Elasticsearch, helpers
+from elasticsearch.exceptions import NotFoundError
 from pymongo import MongoClient
 
 # Povezivanje na MongoDB
@@ -39,16 +40,46 @@ def bulk_index_collection(collection_name, collection):
 
     index_name = collection_name.lower()
 
-    if es.indices.exists(index=index_name):
+    try:
+        es.indices.get(index=index_name)
+        index_exists = True
+    except NotFoundError:
+        index_exists = False
+
+    if index_exists:
         print(f"Brišem postojeći Elasticsearch indeks '{index_name}'...")
         es.indices.delete(index=index_name)
 
-    print(f"Kreiram novi indeks '{index_name}'...")
-    es.indices.create(index=index_name)
+    mapping = {
+        "mappings": {
+            "properties": {
+                "title": {
+                    "type": "text",
+                    "fields": {"keyword": {"type": "keyword", "ignore_above": 256}},
+                },
+                "description": {"type": "text"},
+                "url": {"type": "keyword"},
+                "publishedAt": {"type": "date", "format": "strict_date_optional_time||epoch_millis"},
+                "subcategory": {"type": "keyword"},
+                "category": {"type": "keyword"},
+                "fetched_at": {"type": "date", "format": "strict_date_optional_time||epoch_millis"},
+            }
+        }
+    }
 
-    print(f"Pokrećem bulk indeksiranje za '{collection_name}'...")
-    helpers.bulk(es, generate_actions(articles, index_name))
-    print(f"Bulk indeksiranje za '{collection_name}' završeno.\n")
+    try:
+        print(f"Kreiram novi indeks '{index_name}' s mappingom...")
+        es.indices.create(index=index_name, body=mapping)
+    except Exception as e:
+        print(f"Greška pri kreiranju indeksa '{index_name}': {e}")
+        return
+
+    try:
+        print(f"Pokrećem bulk indeksiranje za '{collection_name}'...")
+        helpers.bulk(es, generate_actions(articles, index_name))
+        print(f"Bulk indeksiranje za '{collection_name}' završeno.\n")
+    except Exception as e:
+        print(f"Greška pri bulk indeksiranju za '{collection_name}': {e}")
 
 
 def bulk_index_all_collections():

@@ -32,6 +32,7 @@ const ArticlesList = ({ topic }) => {
   return (
     <div>
       <h2>Članci za temu: {topic}</h2>
+
       {articles.length === 0 ? (
         <p>Nema dostupnih članaka.</p>
       ) : (
