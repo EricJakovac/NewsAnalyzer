@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import "./App.css";
 import Menu from "./components/Menu/Menu";
 import Table from "./components/Table/Table";
@@ -24,6 +24,9 @@ function App() {
   const [toast, setToast] = useState({ show: false, message: "", type: "" });
   const [refreshing, setRefreshing] = useState(false);
   const [selectedArticle, setSelectedArticle] = useState(null);
+
+  // Ref for scrollable content
+  const mainContentRef = useRef(null);
 
   // List of tabs that have subcategories and should show the chart
   const tabsWithSubcategory = [
@@ -90,11 +93,9 @@ function App() {
       let data;
 
       if (selectedMenu === "home") {
-        // Za HOME tab koristi top headlines iz baze
         console.log("Loading top headlines from database");
         data = await getTopHeadlines();
       } else {
-        // Za ostale tabove koristi standardni endpoint
         const category = getCategoryFromMenu(selectedMenu);
         console.log(`Loading articles for category: ${category}`);
         data = await fetchArticles(category);
@@ -167,7 +168,7 @@ function App() {
     }
   }, [selectedMenu, getCategoryFromMenu, loadArticles]);
 
-  // Update handleSearch to accept a value
+  // Search handler
   const handleSearch = useCallback(async () => {
     if (!searchQuery.trim()) {
       loadArticles();
@@ -202,18 +203,9 @@ function App() {
     }
   }, [searchQuery, selectedMenu, loadArticles, getCategoryFromMenu]);
 
-  // Debounced search input
-  const [debounceTimeout, setDebounceTimeout] = useState(null);
-
   const onInputChange = (e) => {
     setSearchQuery(e.target.value);
   };
-
-  useEffect(() => {
-    return () => {
-      if (debounceTimeout) clearTimeout(debounceTimeout);
-    };
-  }, [debounceTimeout]);
 
   // Clear search input and show all articles
   const handleClear = () => {
@@ -247,13 +239,19 @@ function App() {
     setSearchQuery("");
     setShowInfoBlock(false);
     setSelectedArticle(null);
+    
+    // Scroll to top of main content
+    if (mainContentRef.current) {
+      mainContentRef.current.scrollTo({ top: 0, behavior: "smooth" });
+    }
   };
 
   return (
     <div className="App">
       <Menu onSelectMenu={handleMenuSelect} selectedMenu={selectedMenu} />
 
-      <div className="main-content">
+      {/* SCROLLABLE MAIN CONTENT AREA */}
+      <div className="main-content" ref={mainContentRef}>
         <div className="category-header">
           <h1 className="category-title">
             {getCategoryDisplayName(selectedMenu)}
@@ -278,13 +276,16 @@ function App() {
         />
 
         {/* Show chart for tabs with subcategories except for topic "general" */}
-        {tabsWithSubcategory.includes(selectedMenu) && selectedMenu !== "general" && !searchQuery.trim() && (
-          <div className="subcategory-chart-wrapper">
-            <SubcategoryChart topic={selectedMenu} />
-          </div>
-        )}
+        {tabsWithSubcategory.includes(selectedMenu) &&
+          selectedMenu !== "general" &&
+          !searchQuery.trim() && (
+            <div className="subcategory-chart-wrapper">
+              <SubcategoryChart topic={selectedMenu} />
+            </div>
+          )}
 
-        {!tabsWithSubcategory.includes(selectedMenu) && !searchQuery.trim() && (
+        {/* Show CategoryChart for home tab */}
+        {selectedMenu === "home" && !searchQuery.trim() && (
           <div className="category-chart-wrapper">
             <CategoryChart />
           </div>
@@ -293,61 +294,66 @@ function App() {
         <div
           className={`content-wrapper${showInfoBlock ? " gap-visible" : ""}`}
         >
-          <div
-            className={`table-container${showInfoBlock ? " table-shrink" : ""}`}
-          >
-            {loading ? (
-              <div className="loading">
-                <p>
-                  Loading {getCategoryDisplayName(selectedMenu).toLowerCase()}{" "}
-                  articles...
-                </p>
-              </div>
-            ) : error ? (
-              <div className="error">
-                <p>Can't load data. Please refresh again.</p>
-              </div>
-            ) : articles.length === 0 ? (
-              <div className="no-results">
-                <p>
-                  {searchQuery.trim()
-                    ? `No articles found for "${searchQuery}" in ${getCategoryDisplayName(
-                      selectedMenu
-                    ).toLowerCase()}.`
-                    : `No ${getCategoryDisplayName(
-                      selectedMenu
-                    ).toLowerCase()} articles found.`}
-                </p>
-              </div>
-            ) : (
-              <>
-                {searchQuery.trim() && (
-                  <div className="search-results-info">
-                    <p>
-                      Found {articles.length} article
-                      {articles.length !== 1 ? "s" : ""}
-                      for "{searchQuery}" in{" "}
-                      {getCategoryDisplayName(selectedMenu).toLowerCase()}
-                    </p>
-                  </div>
-                )}
-                <Table
-                  data={articles}
-                  onRowClick={handleRowClick}
-                  showAdditionalButtons={!showInfoBlock}
-                />
-              </>
-            )}
-          </div>
-
-          <div
-            className={`right-blocks info-block-animated${showInfoBlock ? " visible" : ""
+          {selectedMenu === "general" && (
+            <div
+              className={`table-container${
+                showInfoBlock ? " table-shrink" : ""
               }`}
+            >
+              {loading ? (
+                <div className="loading">
+                  <p>
+                    Loading {getCategoryDisplayName(selectedMenu).toLowerCase()}{" "}
+                    articles...
+                  </p>
+                </div>
+              ) : error ? (
+                <div className="error">
+                  <p>Can't load data. Please refresh again.</p>
+                </div>
+              ) : articles.length === 0 ? (
+                <div className="no-results">
+                  <p>
+                    {searchQuery.trim()
+                      ? `No articles found for "${searchQuery}" in ${getCategoryDisplayName(
+                          selectedMenu
+                        ).toLowerCase()}.`
+                      : `No ${getCategoryDisplayName(
+                          selectedMenu
+                        ).toLowerCase()} articles found.`}
+                  </p>
+                </div>
+              ) : (
+                <>
+                  {searchQuery.trim() && (
+                    <div className="search-results-info">
+                      <p>
+                        Found {articles.length} article
+                        {articles.length !== 1 ? "s" : ""} for "{searchQuery}"
+                        in {getCategoryDisplayName(selectedMenu).toLowerCase()}
+                      </p>
+                    </div>
+                  )}
+                  <Table
+                    data={articles}
+                    onRowClick={handleRowClick}
+                    showAdditionalButtons={!showInfoBlock}
+                  />
+                </>
+              )}
+            </div>
+          )}
+
+          {/* Info block remains visible if needed */}
+          <div
+            className={`right-blocks info-block-animated${
+              showInfoBlock ? " visible" : ""
+            }`}
           >
             <div className="info-block">
               {selectedArticle ? (
                 <>
-                  <div className="article-header">
+                  <div className="info-block-header">
                     <h3>Article Details</h3>
                     <button
                       className="close-info-btn"
@@ -356,10 +362,10 @@ function App() {
                         setSelectedArticle(null);
                       }}
                     >
+                      ×
                     </button>
                   </div>
-
-                  <div className="article-content">
+                  <div className="info-block-content">
                     <div className="article-field">
                       <strong>Title:</strong>
                       <p>{selectedArticle.title}</p>
@@ -368,19 +374,17 @@ function App() {
                     <div className="article-field">
                       <strong>Category:</strong>
                       <span className="category-tag">
-                        {
-                          selectedMenu === "home"
-                            ? selectedArticle.category || "General" // Top headlines use 'category' field
-                            : getCategoryDisplayName(selectedMenu) // Regular topics use menu name
-                        }
+                        {selectedMenu === "home"
+                          ? selectedArticle.category || "General"
+                          : getCategoryDisplayName(selectedMenu)}
                       </span>
                     </div>
 
-                    {selectedMenu !== "home" && (
+                    {selectedMenu !== "home" && selectedArticle.subcategory && (
                       <div className="article-field">
                         <strong>Subcategory:</strong>
                         <span className="subcategory-tag">
-                          {selectedArticle.subcategory || "Other"}
+                          {selectedArticle.subcategory}
                         </span>
                       </div>
                     )}
@@ -396,9 +400,11 @@ function App() {
                     <div className="article-field">
                       <strong>Published:</strong>
                       <p>
-                        {new Date(
-                          selectedArticle.publishedAt
-                        ).toLocaleDateString()}
+                        {selectedArticle.publishedAt
+                          ? new Date(
+                              selectedArticle.publishedAt
+                            ).toLocaleDateString()
+                          : "N/A"}
                       </p>
                     </div>
 
@@ -417,20 +423,25 @@ function App() {
                 </>
               ) : (
                 <>
-                  <h3>Article Details</h3>
-                  <p>Select an article to view details here.</p>
-                  <button
-                    className="close-info-btn"
-                    onClick={() => setShowInfoBlock(false)}
-                  >
-                    Close
-                  </button>
+                  <div className="info-block-header">
+                    <h3>Article Details</h3>
+                    <button
+                      className="close-info-btn"
+                      onClick={() => setShowInfoBlock(false)}
+                    >
+                      ×
+                    </button>
+                  </div>
+                  <div className="info-block-content">
+                    <p>Select an article to view details here.</p>
+                  </div>
                 </>
               )}
             </div>
           </div>
         </div>
       </div>
+
       {toast.show && (
         <Toast
           message={toast.message}

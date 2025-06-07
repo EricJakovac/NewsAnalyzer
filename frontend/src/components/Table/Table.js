@@ -1,8 +1,8 @@
 import React from "react";
-import { GoEye, GoGraph } from "react-icons/go";
+import { GoEye } from "react-icons/go";
 import "./Table.css";
 
-const Table = ({ data = [], onRowClick, onShowInfoBlock }) => {
+const Table = ({ data = [], onRowClick }) => {
   // Helper function to format date
   const formatDate = (dateString) => {
     try {
@@ -30,12 +30,11 @@ const Table = ({ data = [], onRowClick, onShowInfoBlock }) => {
   };
 
   return (
-    <div className="table-wrapper">
+    <div className="table-scroll-wrapper">
       <table>
         <thead>
           <tr>
-            <th style={{ width: "5%" }}>No.</th>{" "}
-            {/* Novi stupac za redni broj */}
+            <th style={{ width: "5%" }}>No.</th>
             <th style={{ width: "30%" }}>Article Title</th>
             <th style={{ width: "20%" }}>Source</th>
             <th style={{ width: "15%" }}>Author</th>
@@ -48,7 +47,7 @@ const Table = ({ data = [], onRowClick, onShowInfoBlock }) => {
         <tbody>
           {data.map((item, index) => (
             <tr key={item._id || item.id || index}>
-              <td>{index + 1}</td> {/* Redni broj */}
+              <td>{index + 1}</td>
               <td title={item.title}>{truncateText(item.title, 80)}</td>
               <td>{getSource(item)}</td>
               <td>{item.author || "N/A"}</td>
@@ -62,7 +61,6 @@ const Table = ({ data = [], onRowClick, onShowInfoBlock }) => {
                   >
                     <GoEye size={20} />
                   </button>
-                  {/* Graph button removed */}
                 </span>
               </td>
             </tr>

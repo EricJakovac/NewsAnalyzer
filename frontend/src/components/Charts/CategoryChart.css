@@ -1,0 +1,203 @@
+.category-chart {
+  width: 100%;
+}
+
+.category-chart__title {
+  text-align: center;
+  margin-bottom: 20px;
+  color: var(--text-color);
+  font-size: 1.5rem;
+  font-weight: 600;
+}
+
+.category-chart__error {
+  color: #dc3545;
+  text-align: center;
+  padding: 20px;
+  background: #f8d7da;
+  border: 1px solid #f5c6cb;
+  border-radius: 6px;
+  margin: 20px 0;
+}
+
+.category-chart__no-data {
+  text-align: center;
+  color: var(--secondary-text-color);
+  padding: 40px;
+  font-size: 1.1rem;
+}
+
+.category-chart__filter-container {
+  margin-top: 10px;
+  text-align: center;
+}
+
+.category-chart__filter-badge {
+  display: inline-flex;
+  align-items: center;
+  background-color: #82ca9d;
+  color: #fff;
+  border-radius: 20px;
+  padding: 8px 16px;
+  font-weight: bold;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+  transition: background-color 0.3s ease, transform 0.2s ease;
+  font-size: 0.9rem;
+  cursor: default;
+}
+
+.category-chart__filter-badge:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.category-chart__filter-text {
+  margin-right: 8px;
+}
+
+.category-chart__close-btn {
+  background: none;
+  border: none;
+  color: #fff;
+  font-size: 18px;
+  font-weight: bold;
+  cursor: pointer;
+  padding: 0;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.2s ease;
+}
+
+.category-chart__close-btn:hover {
+  background-color: rgba(255, 255, 255, 0.2);
+}
+
+/* Content wrapper for table and info block */
+.category-chart__content-wrapper {
+  display: flex;
+  gap: 0;
+  margin-top: 20px;
+  overflow: hidden;
+  align-items: stretch;
+}
+
+.category-chart__content-wrapper.gap-visible {
+  gap: 20px;
+}
+
+.category-chart__table-container {
+  background: var(--primary-color);
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  min-height: 600px;
+  overflow: hidden;
+  border: 1px solid var(--border-color);
+  width: 100%;
+  min-width: 0;
+  transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.category-chart__table-container.table-shrink {
+  width: 70%;
+}
+
+/* Info block animation */
+.category-chart__info-block-animated {
+  width: 0;
+  opacity: 0;
+  transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s;
+  min-width: 0;
+  display: flex;
+}
+
+.category-chart__info-block-animated.visible {
+  width: 30%;
+  opacity: 1;
+}
+
+.category-chart__info-block {
+  height: 600px;
+  width: 100%;
+  background: var(--primary-color);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  min-height: 600px;
+}
+
+.category-chart__article-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 24px 16px 24px;
+  border-bottom: 1px solid var(--border-color);
+  background: var(--hover-bg-color);
+}
+
+.category-chart__article-header h3 {
+  margin: 0;
+  color: var(--text-color);
+}
+
+.category-chart__close-info-btn {
+  background: none;
+  border: none;
+  font-size: 24px;
+  color: var(--secondary-text-color);
+  cursor: pointer;
+  padding: 0;
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  transition: background 0.2s;
+}
+
+.category-chart__close-info-btn:hover {
+  background: var(--button-bg-color);
+  color: white;
+}
+
+.category-chart__article-content {
+  padding: 24px;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.category-chart__article-field {
+  margin-bottom: 20px;
+}
+
+.category-chart__article-field strong {
+  display: block;
+  color: var(--text-color);
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+.category-chart__article-field p {
+  margin: 0;
+  color: var(--secondary-text-color);
+  line-height: 1.5;
+}
+
+.category-chart__source-link {
+  color: #23272b;
+  text-decoration: none;
+  font-weight: 500;
+  transition: color 0.2s;
+}
+
+.category-chart__source-link:hover {
+  color: #363c41;
+  text-decoration: underline;
+}

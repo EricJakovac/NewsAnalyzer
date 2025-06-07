@@ -10,15 +10,14 @@ import {
   Cell,
   CartesianGrid,
 } from "recharts";
-import Table from "../Table/Table"; // prilagodi putanju ako treba
+import Table from "../Table/Table";
+import "./CategoryChart.css";
 
 const BASE_URL = "http://localhost:5000";
-
 const COLORS = ["#8884d8", "#82ca9d", "#ffc658", "#ff7f50", "#00c49f", "#ff69b4", "#a28cfe"];
 
-// Pomoćna funkcija za zatamnjivanje boje (hover efekt)
 const darkenColor = (color) => {
-  let c = color.substring(1); // ukloni #
+  let c = color.substring(1);
   let rgb = parseInt(c, 16);
   let r = (rgb >> 16) & 0xff;
   let g = (rgb >> 8) & 0xff;
@@ -32,12 +31,10 @@ const darkenColor = (color) => {
   return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
 };
 
-// Funkcija za dohvat top-headlines (bez topic)
 export const fetchArticles = async () => {
   try {
     const response = await axios.get(`${BASE_URL}/top-headlines`);
-    // Osiguraj da vraća niz
-    return Array.isArray(response.data.articles) ? response.data.articles : [];
+    return Array.isArray(response.data) ? response.data : [];
   } catch (error) {
     console.error("Error fetching articles:", error);
     return [];
@@ -50,12 +47,15 @@ const CategoryChart = () => {
   const [activeFilter, setActiveFilter] = useState(null);
   const [activeColor, setActiveColor] = useState(null);
   const [error, setError] = useState(null);
+  
+  // Local info block state
+  const [selectedArticle, setSelectedArticle] = useState(null);
+  const [showInfoBlock, setShowInfoBlock] = useState(false);
 
   useEffect(() => {
     const fetchCategoryStats = async () => {
       try {
         const response = await axios.get(`${BASE_URL}/category-stats`);
-        console.log("Dohvaćeni category stats:", response.data);
         setData(response.data);
         setError(null);
       } catch (err) {
@@ -67,7 +67,6 @@ const CategoryChart = () => {
     const fetchAllArticles = async () => {
       try {
         const articles = await fetchArticles();
-        console.log("Dohvaćeni svi članci:", articles);
         setArticles(articles);
         setActiveFilter(null);
         setActiveColor(null);
@@ -87,10 +86,12 @@ const CategoryChart = () => {
       const response = await axios.get(`${BASE_URL}/articles-by-category`, {
         params: { category: clickedCategory },
       });
-      console.log(`Dohvaćeni članci za kategoriju ${clickedCategory}:`, response.data);
       setArticles(response.data);
       setActiveFilter(clickedCategory);
       setActiveColor(COLORS[index % COLORS.length]);
+      // Close info block when filter changes
+      setShowInfoBlock(false);
+      setSelectedArticle(null);
     } catch (error) {
       console.error("Error fetching articles for category:", error);
     }
@@ -102,23 +103,36 @@ const CategoryChart = () => {
       setArticles(articles);
       setActiveFilter(null);
       setActiveColor(null);
+      // Close info block when filter is reset
+      setShowInfoBlock(false);
+      setSelectedArticle(null);
     } catch (error) {
       console.error("Error resetting filter:", error);
     }
   };
 
+  // Local row click handler for the chart's table
+  const handleRowClick = (article) => {
+    if (selectedArticle && selectedArticle.url === article.url && showInfoBlock) {
+      setShowInfoBlock(false);
+      setSelectedArticle(null);
+    } else {
+      setSelectedArticle(article);
+      setShowInfoBlock(true);
+    }
+  };
+
   if (error) {
-    return <p style={{ color: "red" }}>{error}</p>;
+    return <p className="category-chart__error">{error}</p>;
   }
 
   if (data.length === 0) {
-    return <p>No category data available.</p>;
+    return <p className="category-chart__no-data">No category data available.</p>;
   }
 
   return (
-    <div>
-      <h2 style={{ textAlign: "center" }}>Statistika po kategorijama</h2>
-
+    <div className="category-chart">
+      <h2 className="category-chart__title">Statistics by category</h2>
       <ResponsiveContainer width="100%" height={300}>
         <BarChart data={data} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
           <CartesianGrid strokeDasharray="3 3" />
@@ -139,51 +153,105 @@ const CategoryChart = () => {
       </ResponsiveContainer>
 
       {activeFilter && (
-        <div style={{ marginTop: "10px", textAlign: "center" }}>
-          <button
-            onClick={resetFilter}
-            style={{
-              backgroundColor: activeColor || "#82ca9d",
-              color: "#fff",
-              border: "none",
-              borderRadius: "5px",
-              padding: "8px 16px",
-              cursor: "pointer",
-              fontWeight: "bold",
-              boxShadow: "0 2px 6px rgba(0,0,0,0.15)",
-              transition: "background-color 0.3s ease",
-            }}
+        <div className="category-chart__filter-container">
+          <div
+            className="category-chart__filter-badge"
+            style={{ backgroundColor: activeColor || "#82ca9d" }}
             onMouseEnter={e => (e.currentTarget.style.backgroundColor = darkenColor(activeColor || "#82ca9d"))}
             onMouseLeave={e => (e.currentTarget.style.backgroundColor = activeColor || "#82ca9d")}
           >
-            Poništi filter ({activeFilter})
-          </button>
+            <span className="category-chart__filter-text">
+              {activeFilter} ({articles.length})
+            </span>
+            <button
+              className="category-chart__close-btn"
+              onClick={resetFilter}
+              title="Remove filter"
+            >
+              ×
+            </button>
+          </div>
         </div>
       )}
 
-      <div style={{
-        display: "flex",
-        flexDirection: "column",
-        height: "54vh" // možeš prilagoditi visinu po potrebi
-      }}>
-        <h3 style={{ textAlign: "center", flexShrink: 0 }}>
-          {activeFilter ? `Članci za kategoriju: ${activeFilter}` : "Svi članci"}
-        </h3>
-
-        <div style={{
-          flexGrow: 1,
-          overflowY: "auto",
-          minHeight: 0 // važno za flexbox scroll na nekim preglednicima
-        }}>
+      {/* Chart table with local info block */}
+      <div className={`category-chart__content-wrapper${showInfoBlock ? " gap-visible" : ""}`}>
+        <div className={`category-chart__table-container${showInfoBlock ? " table-shrink" : ""}`}>
           <Table
             data={articles}
-            onRowClick={(article) => {
-              console.log("Clicked article:", article);
-            }}
+            onRowClick={handleRowClick}
           />
         </div>
-      </div>
 
+        {/* Local info block for the chart */}
+        <div className={`category-chart__info-block-animated${showInfoBlock ? " visible" : ""}`}>
+          <div className="category-chart__info-block">
+            {selectedArticle ? (
+              <>
+                <div className="category-chart__article-header">
+                  <h3>Article Details</h3>
+                  <button
+                    className="category-chart__close-info-btn"
+                    onClick={() => {
+                      setShowInfoBlock(false);
+                      setSelectedArticle(null);
+                    }}
+                  >
+                    ×
+                  </button>
+                </div>
+
+                <div className="category-chart__article-content">
+                  <div className="category-chart__article-field">
+                    <strong>Title:</strong>
+                    <p>{selectedArticle.title}</p>
+                  </div>
+
+                  <div className="category-chart__article-field">
+                    <strong>Category:</strong>
+                    <span className="category-tag">
+                      {selectedArticle.category || "General"}
+                    </span>
+                  </div>
+
+                  <div className="category-chart__article-field">
+                    <strong>Description:</strong>
+                    <p>{selectedArticle.description || "No description available"}</p>
+                  </div>
+
+                  <div className="category-chart__article-field">
+                    <strong>Published:</strong>
+                    <p>{new Date(selectedArticle.publishedAt).toLocaleDateString()}</p>
+                  </div>
+
+                  <div className="category-chart__article-field">
+                    <strong>Source:</strong>
+                    <a
+                      href={selectedArticle.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="category-chart__source-link"
+                    >
+                      Read Full Article →
+                    </a>
+                  </div>
+                </div>
+              </>
+            ) : (
+              <>
+                <h3>Article Details</h3>
+                <p>Select an article to view details here.</p>
+                <button
+                  className="category-chart__close-info-btn"
+                  onClick={() => setShowInfoBlock(false)}
+                >
+                  Close
+                </button>
+              </>
+            )}
+          </div>
+        </div>
+      </div>
     </div>
   );
 };
