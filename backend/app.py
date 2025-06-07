@@ -199,6 +199,26 @@ def category_stats():
 # Dohvacanje articla po category za filtriranje u tablici
 @app.route("/articles-by-category")
 def articles_by_category():
+    category = request.args.get("category")  # Get the specific category from request
+    
+    if not category:
+        return jsonify({"error": "Query parameter 'category' is required"}), 400
+
+    all_articles = []
+    try:
+        for collection in collections_map.values():
+            # Filter by the specific category that was clicked
+            articles = list(collection.find({"category": category}, {"_id": 0}).sort("publishedAt", -1).limit(50))
+            all_articles.extend(articles)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+    # Sort all articles together by date and limit results
+    all_articles.sort(key=lambda x: x.get("publishedAt", "-1"), reverse=True)
+    all_articles = all_articles[:100]
+
+    return jsonify(all_articles)
+
     all_articles = []
     try:
         for collection in collections_map.values():
