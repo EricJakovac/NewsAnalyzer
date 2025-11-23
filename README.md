@@ -16,3 +16,22 @@ Tech Stack:
 - Flask
 - React
 - MongoDB
+
+
+Pokretanje projekta
+BACKEND
+- uci u backend folder cd .\backend\
+- Dodati python environment -> python -m venv venv i aktivirati ga -> venv\Scripts\activate (u cmdu na windowsu)
+- pokrenuti skidanje requirementsa -> pip install -r requirements.txt
+- pokrenuti backend -> python app.py
+
+FRONTEND
+- uci u frontend folder -> cd .\frontend\
+- pokrenuti instalaciju paketa -> npm install
+-pokretanje projekta -> npm start
+
+MONGODB
+- spajanje na mongodb pomocu command pallete-a (ctrl+shift+p) MONGODB: Connect with connection string... -> mongodb+srv://jakovaceric:biljar12345@cluster0.yi304.mongodb.net/
+
+ELASTICSEARCH
+- pokrenuti elastic search u Docker desktopu (treba vidjeti kako dodati novi projekt na docker desktop ako vec ne postoji)
