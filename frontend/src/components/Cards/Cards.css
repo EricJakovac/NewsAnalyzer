@@ -1,0 +1,194 @@
+.cards-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 10px;
+  max-height: 630px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding-right: 4px;
+}
+
+/* pojedina kartica */
+.article-card {
+  background: var(--primary-color);
+  border-radius: 10px;
+  border: 1px solid #d3d3d3;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
+  padding: 12px 14px 10px 14px;
+  margin-bottom: 10px;
+  box-sizing: border-box;
+  max-width: 100%;
+}
+
+/* header: broj + title */
+.article-card-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.article-card-index {
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: #7f8caa;
+  margin-top: 2px;
+}
+
+.article-card-title {
+  margin: 0;
+  font-size: 0.98rem;
+  font-weight: 600;
+  color: #333446;
+}
+
+/* razdjelna linija između headera i bodyja */
+.article-card-divider {
+  margin: 8px 0 10px 0;
+  height: 1px;
+  background: #e0e6eb;
+}
+
+/* body: polja jedno ispod drugog */
+.article-card-body {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+
+.article-card-field .label {
+  display: block;
+  font-size: 0.78rem;
+  color: #777;
+  margin-bottom: 1px;
+}
+
+.article-card-field .value {
+  font-size: 0.9rem;
+  color: #333;
+}
+
+/* link button "see more" */
+.article-card-link {
+  border: none;
+  background: none;
+  color: #3b6ea5;
+  font-size: 0.9rem;
+  font-weight: 500;
+  padding: 0;
+  cursor: pointer;
+  text-decoration: underline;
+  align-self: flex-start;
+}
+
+.article-card-link:hover {
+  color: #284d77;
+}
+
+/* --- POPUP SUMMARY ZA KARTICE (isti stil kao Article Details) --- */
+
+.card-summary-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.35);
+  backdrop-filter: blur(4px);
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
+  z-index: 999;
+}
+
+/* panel gotovo identičan desktop info-bloku, ali slide-up i s 50px lufta gore */
+.card-summary-panel {
+  position: relative;
+  width: 100%;
+  max-width: 480px;
+  max-height: calc(100vh - 50px);
+  background: var(--primary-color);
+  border-radius: 10px;
+  border: 1px solid var(--border-color);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.18);
+  overflow: hidden;
+  transform: translateY(100%);
+  animation: slideUpSummary 0.3s ease-out forwards;
+}
+
+/* header – ista traka kao na slici */
+.card-summary-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 20px;
+  background: var(--hover-bg-color);
+  border-bottom: 1px solid var(--border-color);
+}
+
+.card-summary-header h3 {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--text-color);
+}
+
+.card-summary-close {
+  background: none;
+  border: none;
+  font-size: 1.4rem;
+  color: var(--secondary-text-color);
+  cursor: pointer;
+}
+
+/* sadržaj kao u info-blocku */
+.card-summary-content {
+  padding: 20px 22px 22px 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.card-summary-field strong {
+  display: block;
+  margin-bottom: 6px;
+  font-weight: 600;
+  color: var(--text-color);
+}
+
+.card-summary-field p {
+  margin: 0;
+  color: var(--secondary-text-color);
+  line-height: 1.4;
+}
+
+/* badge za category – reuse postojeće klase ako već postoji */
+.category-tag {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  background: #333446;
+  color: white;
+}
+
+/* link stil kao u info-bloku */
+.source-link {
+  color: #23272b;
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.source-link:hover {
+  color: #363c41;
+  text-decoration: underline;
+}
+
+/* slide-up animacija */
+@keyframes slideUpSummary {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0%);
+  }
+}

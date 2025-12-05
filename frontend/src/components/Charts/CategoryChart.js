@@ -12,9 +12,18 @@ import {
 } from "recharts";
 import Table from "../Table/Table";
 import "./CategoryChart.css";
+import Cards from "../Cards/Cards";
 
 const BASE_URL = "http://localhost:5000";
-const COLORS = ["#8884d8", "#82ca9d", "#ffc658", "#ff7f50", "#00c49f", "#ff69b4", "#a28cfe"];
+const COLORS = [
+  "#8884d8",
+  "#82ca9d",
+  "#ffc658",
+  "#ff7f50",
+  "#00c49f",
+  "#ff69b4",
+  "#a28cfe",
+];
 
 const darkenColor = (color) => {
   let c = color.substring(1);
@@ -42,12 +51,13 @@ export const fetchArticles = async () => {
 };
 
 const CategoryChart = () => {
+  const isMobile = window.innerWidth < 768;
   const [data, setData] = useState([]);
   const [articles, setArticles] = useState([]);
   const [activeFilter, setActiveFilter] = useState(null);
   const [activeColor, setActiveColor] = useState(null);
   const [error, setError] = useState(null);
-  
+
   // Local info block state
   const [selectedArticle, setSelectedArticle] = useState(null);
   const [showInfoBlock, setShowInfoBlock] = useState(false);
@@ -59,7 +69,9 @@ const CategoryChart = () => {
         setData(response.data);
         setError(null);
       } catch (err) {
-        setError(err.response?.data?.error || "Error loading category statistics.");
+        setError(
+          err.response?.data?.error || "Error loading category statistics."
+        );
         setData([]);
       }
     };
@@ -113,7 +125,11 @@ const CategoryChart = () => {
 
   // Local row click handler for the chart's table
   const handleRowClick = (article) => {
-    if (selectedArticle && selectedArticle.url === article.url && showInfoBlock) {
+    if (
+      selectedArticle &&
+      selectedArticle.url === article.url &&
+      showInfoBlock
+    ) {
       setShowInfoBlock(false);
       setSelectedArticle(null);
     } else {
@@ -127,14 +143,19 @@ const CategoryChart = () => {
   }
 
   if (data.length === 0) {
-    return <p className="category-chart__no-data">No category data available.</p>;
+    return (
+      <p className="category-chart__no-data">No category data available.</p>
+    );
   }
 
   return (
     <div className="category-chart">
       <h2 className="category-chart__title">Statistics by category</h2>
       <ResponsiveContainer width="100%" height={300}>
-        <BarChart data={data} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+        <BarChart
+          data={data}
+          margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
+        >
           <CartesianGrid strokeDasharray="3 3" />
           <XAxis dataKey="category" />
           <YAxis allowDecimals={false} />
@@ -146,7 +167,10 @@ const CategoryChart = () => {
             cursor="pointer"
           >
             {data.map((entry, index) => (
-              <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+              <Cell
+                key={`cell-${index}`}
+                fill={COLORS[index % COLORS.length]}
+              />
             ))}
           </Bar>
         </BarChart>
@@ -157,8 +181,14 @@ const CategoryChart = () => {
           <div
             className="category-chart__filter-badge"
             style={{ backgroundColor: activeColor || "#82ca9d" }}
-            onMouseEnter={e => (e.currentTarget.style.backgroundColor = darkenColor(activeColor || "#82ca9d"))}
-            onMouseLeave={e => (e.currentTarget.style.backgroundColor = activeColor || "#82ca9d")}
+            onMouseEnter={(e) =>
+              (e.currentTarget.style.backgroundColor = darkenColor(
+                activeColor || "#82ca9d"
+              ))
+            }
+            onMouseLeave={(e) =>
+              (e.currentTarget.style.backgroundColor = activeColor || "#82ca9d")
+            }
           >
             <span className="category-chart__filter-text">
               {activeFilter} ({articles.length})
@@ -175,16 +205,29 @@ const CategoryChart = () => {
       )}
 
       {/* Chart table with local info block */}
-      <div className={`category-chart__content-wrapper${showInfoBlock ? " gap-visible" : ""}`}>
-        <div className={`category-chart__table-container${showInfoBlock ? " table-shrink" : ""}`}>
-          <Table
-            data={articles}
-            onRowClick={handleRowClick}
-          />
+      <div
+        className={`category-chart__content-wrapper${
+          showInfoBlock ? " gap-visible" : ""
+        }`}
+      >
+        <div
+          className={`category-chart__table-container${
+            showInfoBlock ? " table-shrink" : ""
+          }`}
+        >
+          {isMobile ? (
+            <Cards data={articles} onRowClick={handleRowClick} />
+          ) : (
+            <Table data={articles} onRowClick={handleRowClick} />
+          )}
         </div>
 
         {/* Local info block for the chart */}
-        <div className={`category-chart__info-block-animated${showInfoBlock ? " visible" : ""}`}>
+        <div
+          className={`category-chart__info-block-animated${
+            showInfoBlock ? " visible" : ""
+          }`}
+        >
           <div className="category-chart__info-block">
             {selectedArticle ? (
               <>
@@ -216,12 +259,19 @@ const CategoryChart = () => {
 
                   <div className="category-chart__article-field">
                     <strong>Description:</strong>
-                    <p>{selectedArticle.description || "No description available"}</p>
+                    <p>
+                      {selectedArticle.description ||
+                        "No description available"}
+                    </p>
                   </div>
 
                   <div className="category-chart__article-field">
                     <strong>Published:</strong>
-                    <p>{new Date(selectedArticle.publishedAt).toLocaleDateString()}</p>
+                    <p>
+                      {new Date(
+                        selectedArticle.publishedAt
+                      ).toLocaleDateString()}
+                    </p>
                   </div>
 
                   <div className="category-chart__article-field">

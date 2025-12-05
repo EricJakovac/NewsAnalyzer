@@ -13,8 +13,12 @@ import {
 import Toast from "./components/Toast/Toast";
 import SubcategoryChart from "./components/Charts/SubcategoryChart";
 import CategoryChart from "./components/Charts/CategoryChart";
+import Cards from "./components/Cards/Cards";
 
 function App() {
+  const isMobile = window.innerWidth < 768;
+
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(true);
   const [selectedMenu, setSelectedMenu] = useState("home");
   const [searchQuery, setSearchQuery] = useState("");
   const [showInfoBlock, setShowInfoBlock] = useState(false);
@@ -239,7 +243,8 @@ function App() {
     setSearchQuery("");
     setShowInfoBlock(false);
     setSelectedArticle(null);
-    
+    setSelectedMenu(menu);
+
     // Scroll to top of main content
     if (mainContentRef.current) {
       mainContentRef.current.scrollTo({ top: 0, behavior: "smooth" });
@@ -248,10 +253,20 @@ function App() {
 
   return (
     <div className="App">
-      <Menu onSelectMenu={handleMenuSelect} selectedMenu={selectedMenu} />
+      <Menu
+        onSelectMenu={handleMenuSelect}
+        selectedMenu={selectedMenu}
+        isCollapsed={isSidebarCollapsed}
+        setIsCollapsed={setIsSidebarCollapsed}
+      />
 
       {/* SCROLLABLE MAIN CONTENT AREA */}
-      <div className="main-content" ref={mainContentRef}>
+      <div
+        className={`main-content ${
+          isSidebarCollapsed ? "main-content-collapsed" : ""
+        }`}
+        ref={mainContentRef}
+      >
         <div className="category-header">
           <h1 className="category-title">
             {getCategoryDisplayName(selectedMenu)}
@@ -334,11 +349,11 @@ function App() {
                       </p>
                     </div>
                   )}
-                  <Table
-                    data={articles}
-                    onRowClick={handleRowClick}
-                    showAdditionalButtons={!showInfoBlock}
-                  />
+                  {isMobile ? (
+                    <Cards data={articles} onRowClick={handleRowClick} />
+                  ) : (
+                    <Table data={articles} onRowClick={handleRowClick} />
+                  )}
                 </>
               )}
             </div>

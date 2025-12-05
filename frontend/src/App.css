@@ -341,3 +341,17 @@
 .main-content::-webkit-scrollbar-thumb:hover {
   background: var(--button-bg-color);
 }
+
+.main-content.main-content-collapsed {
+  
+}
+
+@media (max-width: 768px) {
+  .App {
+    flex-direction: row;
+  }
+
+  .main-content {
+    padding: 12px;
+  }
+}

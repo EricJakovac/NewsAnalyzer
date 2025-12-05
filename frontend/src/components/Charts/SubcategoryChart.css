@@ -184,3 +184,17 @@
   color: #363c41;
   text-decoration: underline;
 }
+
+Cards {
+  display: none;
+}
+
+@media(max-width: 767px) {
+  Table {
+    display: none !important;
+  }
+  
+  Cards {
+    display: flex !important;
+  }
+}
