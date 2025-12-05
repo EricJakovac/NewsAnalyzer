@@ -2,31 +2,15 @@
 
 ___Aplikacija za klasifikaciju vijesti___
 
-Project setup:
-1. Kloniraj projekt
-2. Udi u frontend folder cd .\frontend\
-3. Pokreni naredbu npm install - ovo instalira sve frontend dependencies
-4. Onda pokreni naredbu npm run setup - ovo kreira virtual environment i instalira potrebne backend dependencies
-5. I nakon sto su svi dependencies isntalirani pokreces backend i frontend skupa s naredbom npm run dev
+Projekt News Analyzer je web-aplikacija za automatsku analizu i kategorizaciju novinskih članaka u stvarnom vremenu. Sastoji se od tri glavne cjeline:
 
-Dodatno ces mozda morati skinuti Mongo for VSCode extension na Vscodu ako ti se nece uspjesti spojiti s bazom. Trenutno da bi povukla s API-a podatke, istrenirala model te ostalo sve se mora napraviti preko Postmana s slanjem zahtjeva na odredene endpointe, ali to ti sve objasnim kada se cujemo, za sada samo probaj to sve pokrenuti pa cemo dalje skupa nastaviti.
+    Backend je razvijen u Python Flasku i zadužen je za dohvat vijesti s vanjskih izvora (News API), obradu i čišćenje podataka, automatsku kategorizaciju članaka korištenjem strojnog učenja (Naive Bayes), te izlaganje REST API-ja za frontend.
 
-Vjerojatno ces trebati za svaki push/pull i slicno autentificirati se na github sa svojim korisnickim imenom i lozinkom, ali lozinka je zapravo tvoj PAT (token) koji je kod tebe na kompu lokalno pa preporucujem da napravis jos ovo da to ne trebas svaki put upisivati. Obavezno udi na wsl radi ove naredbe pod 9.
-1. Udi na ovaj link https://github.com/settings/tokens
-2. Kreiraj token, "Generate new token (classic)"
-3. Dodan ime koje zelis ja sam stavio "NewsToken" u note
-4. Stavi da je "No expiration" te postavi scope na repo i deleterepo
-5. Generiraj token i kopiraj ga
-6. Pokreni neki naredbu pull ili nesto
-7. Upisi svoje korisnicko ime
-8. Kopirani token zalijepi u lozinku
-9. Kada je sve to zavrsilo baci ovu naredbu git config --global credential.helper store
-   ona bi trebala spremiti taj token i korisnicko ime da ne moras svaki put upisivati, trebalo bi raditi na bilo kojem terminalu (cmd, powershell, wsl, git bash,..)
-10. Provjeri dal ti se zapravo to spremilo ovom naredbom git config --global credential.helper
-    trebalo bi ti izbaciti kao "store" ako su spremljeni svi podaci
-11. Dodatno ubaci naredbu cat ~/.git-credentials
-    ona provjerava jos koji credentiali su ti spremljeni, trebalo bi izgledati ovako "https://username:personalaccesstoken@github.com"
-12. To bi trebalo biti to mozes koristiti sve naredbe bez upisivanja tih tokena i korisnickog imena svaki put
+    Data sloj koristi MongoDB kao primarnu bazu za pohranu strukturiranih članaka i ElasticSearch za brzo pretraživanje i naprednu analitiku. Modeli strojnog učenja pohranjeni su kao joblib datoteke.
+
+    Frontend je izrađen u React.js i omogućuje korisnicima pregled, pretraživanje, filtriranje i vizualizaciju vijesti po kategorijama i podkategorijama, kao i interaktivni prikaz statistika i detalja svakog članka.
+
+Svrha projekta je omogućiti korisnicima brz i pregledan uvid u aktualne vijesti, automatski ih razvrstati po temama i podtemama, te pružiti napredne analitičke alate za istraživanje trendova i strukture novinskog sadržaja. Sustav je skalabilan, radi u stvarnom vremenu i integrira moderne tehnologije za rad s velikim količinama podataka i strojno učenje.
 
 Tech Stack:
 - Flask
@@ -34,14 +18,20 @@ Tech Stack:
 - MongoDB
 
 
-___Za Napraviti___
+Pokretanje projekta
+BACKEND
+- uci u backend folder cd .\backend\
+- Dodati python environment -> python -m venv venv i aktivirati ga -> venv\Scripts\activate (u cmdu na windowsu)
+- pokrenuti skidanje requirementsa -> pip install -r requirements.txt
+- pokrenuti backend -> python app.py
 
-- Na analitics prikazati za svaki article njegovu klasifikaciju
-- SearchBar i dodati ElasticSearch u kod, instalirati lokalno 
+FRONTEND
+- uci u frontend folder -> cd .\frontend\
+- pokrenuti instalaciju paketa -> npm install
+-pokretanje projekta -> npm start
 
+MONGODB
+- spajanje na mongodb pomocu command pallete-a (ctrl+shift+p) MONGODB: Connect with connection string... -> mongodb+srv://jakovaceric:biljar12345@cluster0.yi304.mongodb.net/
 
-___NAPRAVLJENO___
-
-Klasifikacija za sve podatke osim general topica, topic imaju polje subcategory za klasifikaciju, a top-headlines imaju polje category
-
-Napravljen pipeline dohvacanje -> ciscenje -> klasifikacija -> spremanje -> dodavanje u elastic -> treniranje modela
+ELASTICSEARCH
+- pokrenuti elastic search u Docker desktopu (treba vidjeti kako dodati novi projekt na docker desktop ako vec ne postoji)

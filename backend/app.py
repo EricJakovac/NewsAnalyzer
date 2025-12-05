@@ -5,7 +5,6 @@ from flask_cors import CORS
 from mongo import clusters_collection
 from news_classifier import train_classifier_for_topic, train_top_headlines_classifier
 from news_fetcher import fetch_articles_by_topic, fetch_top_headlines
-from theme_clusterer import cluster_themes
 
 app = Flask(__name__)
 CORS(app)
@@ -200,7 +199,7 @@ def category_stats():
 @app.route("/articles-by-category")
 def articles_by_category():
     category = request.args.get("category")  # Get the specific category from request
-    
+
     if not category:
         return jsonify({"error": "Query parameter 'category' is required"}), 400
 
@@ -218,27 +217,6 @@ def articles_by_category():
     all_articles = all_articles[:100]
 
     return jsonify(all_articles)
-
-    all_articles = []
-    try:
-        for collection in collections_map.values():
-            # Dohvati članke koji imaju polje 'category' (bilo koja vrijednost)
-            articles = list(collection.find({"category": {"$exists": True}}, {"_id": 0}).sort("publishedAt", -1).limit(50))
-            all_articles.extend(articles)
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
-
-    # Opcionalno: sortiraj sve zajedno po datumu i ograniči broj rezultata
-    all_articles.sort(key=lambda x: x.get("publishedAt", "-1"), reverse=True)
-    all_articles = all_articles[:100]
-
-    return jsonify(all_articles)
-
-
-@app.route("/clusters")
-def get_clusters():
-    clusters = list(clusters_collection.find({}, {"_id": 0}))
-    return jsonify(clusters)
 
 
 if __name__ == "__main__":

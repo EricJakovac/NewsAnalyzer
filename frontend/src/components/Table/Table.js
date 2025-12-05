@@ -16,9 +16,20 @@ const Table = ({ data = [], onRowClick }) => {
     }
   };
 
-  // Helper function to extract country/source
+  // Improved source detection
   const getSource = (article) => {
-    return article.source?.name || "Unknown Source";
+    if (typeof article.source === "string") return article.source;
+    if (article.source?.name) return article.source.name;
+    if (article.og_publication) return article.og_publication;
+    return "Unknown Source";
+  };
+
+  // Improved author detection
+  const getAuthor = (article) => {
+    if (Array.isArray(article.authors)) return article.authors.join(", ");
+    if (article.author) return article.author;
+    if (article.og_author) return article.og_author;
+    return "N/A";
   };
 
   // Helper function to truncate text
@@ -50,7 +61,7 @@ const Table = ({ data = [], onRowClick }) => {
               <td>{index + 1}</td>
               <td title={item.title}>{truncateText(item.title, 80)}</td>
               <td>{getSource(item)}</td>
-              <td>{item.author || "N/A"}</td>
+              <td>{getAuthor(item)}</td>
               <td>{formatDate(item.publishedAt || item.date)}</td>
               <td className="actions-cell">
                 <span className="actions-btns">

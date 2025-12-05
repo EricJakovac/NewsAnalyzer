@@ -59,3 +59,15 @@ export const getTopHeadlines = async () => {
     throw error;
   }
 };
+
+export const searchTopHeadlines = async (query) => {
+  try {
+    const response = await axios.get(`${BASE_URL}/search`, {
+      params: { q: query, index: "top" }
+    });
+    return response.data.results;
+  } catch (error) {
+    console.error("Error searching top headlines:", error);
+    throw error;
+  }
+};

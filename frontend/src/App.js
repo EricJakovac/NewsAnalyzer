@@ -9,6 +9,7 @@ import {
   fetchArticlesByTopic,
   searchArticles,
   getTopHeadlines,
+  searchTopHeadlines,
 } from "./api/NewsAPI";
 import Toast from "./components/Toast/Toast";
 import SubcategoryChart from "./components/Charts/SubcategoryChart";
@@ -207,6 +208,16 @@ function App() {
     }
   }, [searchQuery, selectedMenu, loadArticles, getCategoryFromMenu]);
 
+  const handleSearchTopHeadlines = async (searchQuery) => {
+    try {
+      const results = await searchTopHeadlines(searchQuery);
+      setArticles(results); // Pretpostavljam da koristiš setArticles za prikaz rezultata
+    } catch (error) {
+      console.error("Error searching top headlines:", error);
+      // Možeš dodati prikaz greške korisniku ako želiš
+    }
+  };
+
   const onInputChange = (e) => {
     setSearchQuery(e.target.value);
   };
@@ -237,6 +248,16 @@ function App() {
       setShowInfoBlock(true);
     }
   };
+
+  const handleSearchInput = async (e) => {
+    const value = e.target.value;
+    setSearchQuery(value);
+
+    if (selectedMenu === "home" && value.trim() !== "") {
+      await handleSearchTopHeadlines(value);
+    }
+  };
+
 
   const handleMenuSelect = (menu) => {
     setSelectedMenu(menu);
@@ -306,14 +327,84 @@ function App() {
           </div>
         )}
 
-        <div
-          className={`content-wrapper${showInfoBlock ? " gap-visible" : ""}`}
-        >
+        <div className={`content-wrapper${showInfoBlock ? " gap-visible" : ""}`}>
+          {/* DODAJ OVAJ BLOK - Show Table for other subcategory tabs when searching */}
+          {tabsWithSubcategory.includes(selectedMenu) &&
+            selectedMenu !== "general" &&
+            selectedMenu !== "home" &&
+            searchQuery.trim() && (
+              <div className={`table-container${showInfoBlock ? " table-shrink" : ""}`}>
+                {loading ? (
+                  <div className="loading">
+                    <p>
+                      Searching {getCategoryDisplayName(selectedMenu).toLowerCase()} articles...
+                    </p>
+                  </div>
+                ) : error ? (
+                  <div className="error">
+                    <p>Can't load data. Please refresh again.</p>
+                  </div>
+                ) : articles.length === 0 ? (
+                  <div className="no-results">
+                    <p>
+                      No articles found for "{searchQuery}" in {getCategoryDisplayName(selectedMenu).toLowerCase()}.
+                    </p>
+                  </div>
+                ) : (
+                  <>
+                    <div className="search-results-info">
+                      <p>
+                        Found {articles.length} article{articles.length !== 1 ? "s" : ""} for "{searchQuery}" in {getCategoryDisplayName(selectedMenu).toLowerCase()}
+                      </p>
+                    </div>
+                    <Table
+                      data={articles}
+                      onRowClick={handleRowClick}
+                      showAdditionalButtons={!showInfoBlock}
+                    />
+                  </>
+                )}
+              </div>
+            )}
+          {/* Show Table with search results for home tab when searching */}
+          {selectedMenu === "home" && searchQuery.trim() && (
+            <div className="table-container">
+              {loading ? (
+                <div className="loading">
+                  <p>
+                    Searching top headlines...
+                  </p>
+                </div>
+              ) : error ? (
+                <div className="error">
+                  <p>Can't load data. Please refresh again.</p>
+                </div>
+              ) : articles.length === 0 ? (
+                <div className="no-results">
+                  <p>
+                    No top headlines found for "{searchQuery}".
+                  </p>
+                </div>
+              ) : (
+                <>
+                  <div className="search-results-info">
+                    <p>
+                      Found {articles.length} article{articles.length !== 1 ? "s" : ""} for "{searchQuery}" in top headlines
+                    </p>
+                  </div>
+                  <Table
+                    data={articles}
+                    onRowClick={handleRowClick}
+                    showAdditionalButtons={!showInfoBlock}
+                  />
+                </>
+              )}
+            </div>
+          )}
           {selectedMenu === "general" && (
             <div
-              className={`table-container${
-                showInfoBlock ? " table-shrink" : ""
-              }`}
+              className={`table-container${showInfoBlock ? " table-shrink" : ""
+                }`}
             >
               {loading ? (
                 <div className="loading">
@@ -331,11 +422,11 @@ function App() {
                   <p>
                     {searchQuery.trim()
                       ? `No articles found for "${searchQuery}" in ${getCategoryDisplayName(
-                          selectedMenu
-                        ).toLowerCase()}.`
+                        selectedMenu
+                      ).toLowerCase()}.`
                       : `No ${getCategoryDisplayName(
-                          selectedMenu
-                        ).toLowerCase()} articles found.`}
+                        selectedMenu
+                      ).toLowerCase()} articles found.`}
                   </p>
                 </div>
               ) : (
@@ -361,9 +452,8 @@ function App() {
 
           {/* Info block remains visible if needed */}
           <div
-            className={`right-blocks info-block-animated${
-              showInfoBlock ? " visible" : ""
-            }`}
+            className={`right-blocks info-block-animated${showInfoBlock ? " visible" : ""
+              }`}
           >
             <div className="info-block">
               {selectedArticle ? (
@@ -417,8 +507,8 @@ function App() {
                       <p>
                         {selectedArticle.publishedAt
                           ? new Date(
-                              selectedArticle.publishedAt
-                            ).toLocaleDateString()
+                            selectedArticle.publishedAt
+                          ).toLocaleDateString()
                           : "N/A"}
                       </p>
                     </div>
