@@ -2,14 +2,22 @@
   width: 100%;
 }
 
-.category-chart__title {
-  text-align: center;
-  margin-bottom: 20px;
+/* Naslov i header */
+.category-chart-header {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.category-chart-header h2 {
+  margin: 0;
   color: var(--text-color);
   font-size: 1.5rem;
   font-weight: 600;
 }
 
+/* Error i no-data */
 .category-chart__error {
   color: #dc3545;
   text-align: center;
@@ -27,6 +35,7 @@
   font-size: 1.1rem;
 }
 
+/* FILTER BADGE – kopija iz SubcategoryChart */
 .category-chart__filter-container {
   margin-top: 10px;
   text-align: center;
@@ -132,6 +141,7 @@
   min-height: 600px;
 }
 
+/* Info block header i content */
 .category-chart__article-header {
   display: flex;
   justify-content: space-between;
@@ -200,4 +210,29 @@
 .category-chart__source-link:hover {
   color: #363c41;
   text-decoration: underline;
+}
+
+/* D3 horizontal chart axes */
+.category-chart-body svg {
+  width: 100%;
+  max-height: 360px;
+}
+
+/* malo zgusni za mobitel */
+@media (max-width: 768px) {
+  .category-chart-body svg {
+    max-height: 320px;
+  }
+
+  .d3-y-axis text {
+    font-size: 11px;
+  }
+
+  .category-chart__table-container.table-shrink {
+    width: 100%;
+  }
+
+  .category-chart__info-block-animated.visible {
+    display: none;
+  }
 }

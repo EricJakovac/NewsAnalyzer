@@ -2,14 +2,30 @@
   width: 100%;
 }
 
-.subcategory-chart__title {
-  text-align: center;
-  margin-bottom: 20px;
+/* Naslov i header */
+.subcategory-chart-header {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.subcategory-chart-header h2 {
+  margin: 0;
   color: var(--text-color);
   font-size: 1.5rem;
   font-weight: 600;
 }
 
+/* No-data */
+.subcategory-chart__no-data {
+  text-align: center;
+  color: var(--secondary-text-color);
+  padding: 40px;
+  font-size: 1.1rem;
+}
+
+/* FILTER BADGE – isti stil kao CategoryChart */
 .subcategory-chart__filter-container {
   margin-top: 10px;
   text-align: center;
@@ -59,12 +75,12 @@
   background-color: rgba(255, 255, 255, 0.2);
 }
 
-/* Content wrapper for table and info block - COPIED FROM CATEGORYCHART */
+/* Content wrapper for table and info block – kopirano iz CategoryChart */
 .subcategory-chart__content-wrapper {
   display: flex;
   gap: 0;
   margin-top: 20px;
-  overflow: hidden;  /* Same as CategoryChart */
+  overflow: hidden;
   align-items: stretch;
 }
 
@@ -77,7 +93,7 @@
   border-radius: 8px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
   min-height: 600px;
-  overflow: hidden;  /* Same as CategoryChart - no horizontal scrolling */
+  overflow: hidden;
   border: 1px solid var(--border-color);
   width: 100%;
   min-width: 0;
@@ -88,7 +104,7 @@
   width: 70%;
 }
 
-/* Info block animation - COPIED FROM CATEGORYCHART */
+/* Info block animation */
 .subcategory-chart__info-block-animated {
   width: 0;
   opacity: 0;
@@ -115,6 +131,7 @@
   min-height: 600px;
 }
 
+/* Info block header i content */
 .subcategory-chart__article-header {
   display: flex;
   justify-content: space-between;
@@ -185,16 +202,27 @@
   text-decoration: underline;
 }
 
-Cards {
-  display: none;
+/* D3 horizontal chart axes */
+.subcategory-chart-body svg {
+  width: 100%;
+  max-height: 360px;
 }
 
-@media(max-width: 767px) {
-  Table {
-    display: none !important;
+/* Responsive */
+@media (max-width: 768px) {
+  .subcategory-chart-body svg {
+    max-height: 320px;
   }
-  
-  Cards {
-    display: flex !important;
+
+  .d3-y-axis text {
+    font-size: 11px;
+  }
+
+  .subcategory-chart__table-container.table-shrink {
+    width: 100%;
+  }
+
+  .subcategory-chart__info-block-animated.visible {
+    display: none;
   }
 }

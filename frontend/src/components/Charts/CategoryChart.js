@@ -1,20 +1,12 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import axios from "axios";
-import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  Tooltip,
-  ResponsiveContainer,
-  Cell,
-  CartesianGrid,
-} from "recharts";
+import * as d3 from "d3";
 import Table from "../Table/Table";
-import "./CategoryChart.css";
 import Cards from "../Cards/Cards";
+import "./CategoryChart.css";
 
 const BASE_URL = "http://localhost:5000";
+
 const COLORS = [
   "#8884d8",
   "#82ca9d",
@@ -52,13 +44,15 @@ export const fetchArticles = async () => {
 
 const CategoryChart = () => {
   const isMobile = window.innerWidth < 768;
+  const svgRef = useRef(null);
+
   const [data, setData] = useState([]);
   const [articles, setArticles] = useState([]);
   const [activeFilter, setActiveFilter] = useState(null);
   const [activeColor, setActiveColor] = useState(null);
   const [error, setError] = useState(null);
 
-  // Local info block state
+  // lokalni info block
   const [selectedArticle, setSelectedArticle] = useState(null);
   const [showInfoBlock, setShowInfoBlock] = useState(false);
 
@@ -78,12 +72,12 @@ const CategoryChart = () => {
 
     const fetchAllArticles = async () => {
       try {
-        const articles = await fetchArticles();
-        setArticles(articles);
+        const arts = await fetchArticles();
+        setArticles(arts);
         setActiveFilter(null);
         setActiveColor(null);
-      } catch (error) {
-        console.error("Error fetching all articles:", error);
+      } catch (err) {
+        console.error("Error fetching all articles:", err);
       }
     };
 
@@ -91,17 +85,110 @@ const CategoryChart = () => {
     fetchAllArticles();
   }, []);
 
+  // D3 horizontal bar chart
+  useEffect(() => {
+    if (!data || data.length === 0) return;
+
+    const svgEl = svgRef.current;
+    const container = svgEl.parentElement;
+    const width = container.clientWidth || 800;
+    const height = isMobile ? 260 : 320;
+    const margin = { top: 20, right: 20, bottom: 40, left: 100 };
+
+    const innerWidth = width - margin.left - margin.right;
+    const innerHeight = height - margin.top - margin.bottom;
+
+    const svg = d3.select(svgEl).attr("width", width).attr("height", height);
+    svg.selectAll("*").remove();
+
+    const g = svg
+      .append("g")
+      .attr("transform", `translate(${margin.left},${margin.top})`);
+
+    const x = d3
+      .scaleLinear()
+      .domain([0, d3.max(data, (d) => d.count) || 0])
+      .nice()
+      .range([0, innerWidth]);
+
+    const y = d3
+      .scaleBand()
+      .domain(data.map((d) => d.category))
+      .range([0, innerHeight])
+      .padding(0.3);
+
+    // grid linije
+    g.append("g")
+      .attr("class", "d3-grid")
+      .call(d3.axisBottom(x).tickSize(innerHeight).tickFormat(""))
+      .selectAll("line")
+      .attr("stroke", "#e0e6eb");
+
+    // X osa
+    g.append("g")
+      .attr("class", "d3-x-axis")
+      .attr("transform", `translate(0,${innerHeight})`)
+      .call(d3.axisBottom(x).ticks(5))
+      .selectAll("text")
+      .attr("fill", "#333446")
+      .style("font-size", "11px");
+
+    // Y osa (nazivi kategorija)
+    g.append("g")
+      .attr("class", "d3-y-axis")
+      .call(d3.axisLeft(y))
+      .selectAll("text")
+      .attr("fill", "#333446")
+      .style("font-size", isMobile ? "11px" : "12px");
+
+    // stupci – horizontalni
+    const bars = g
+      .selectAll(".d3-bar")
+      .data(data, (d) => d.category)
+      .join("rect")
+      .attr("class", "d3-bar")
+      .attr("y", (d) => y(d.category))
+      .attr("height", y.bandwidth())
+      .attr("x", 0)
+      .attr("width", 0)
+      .attr("rx", 4)
+      .attr("ry", 4)
+      .style("cursor", "pointer")
+      .attr("fill", (d, i) => {
+        const base = COLORS[i % COLORS.length];
+        if (activeFilter && d.category === activeFilter) {
+          return darkenColor(base);
+        }
+        return base;
+      });
+
+    // animacija širine
+    bars
+      .transition()
+      .duration(600)
+      .attr("width", (d) => x(d.count));
+
+    // click filtriranje – dohvaća članke za kategoriju
+    bars.on("click", (event, d) => {
+      const index = data.findIndex((item) => item.category === d.category);
+      handleBarClick({ payload: d }, index);
+    });
+  }, [data, activeFilter, isMobile]);
+
   const handleBarClick = async (entry, index) => {
     if (!entry || !entry.payload || !entry.payload.category) return;
+
     const clickedCategory = entry.payload.category;
+
     try {
       const response = await axios.get(`${BASE_URL}/articles-by-category`, {
         params: { category: clickedCategory },
       });
+
       setArticles(response.data);
       setActiveFilter(clickedCategory);
       setActiveColor(COLORS[index % COLORS.length]);
-      // Close info block when filter changes
+
       setShowInfoBlock(false);
       setSelectedArticle(null);
     } catch (error) {
@@ -111,11 +198,10 @@ const CategoryChart = () => {
 
   const resetFilter = async () => {
     try {
-      const articles = await fetchArticles();
-      setArticles(articles);
+      const arts = await fetchArticles();
+      setArticles(arts);
       setActiveFilter(null);
       setActiveColor(null);
-      // Close info block when filter is reset
       setShowInfoBlock(false);
       setSelectedArticle(null);
     } catch (error) {
@@ -123,7 +209,6 @@ const CategoryChart = () => {
     }
   };
 
-  // Local row click handler for the chart's table
   const handleRowClick = (article) => {
     if (
       selectedArticle &&
@@ -150,45 +235,20 @@ const CategoryChart = () => {
 
   return (
     <div className="category-chart">
-      <h2 className="category-chart__title">Statistics by category</h2>
-      <ResponsiveContainer width="100%" height={300}>
-        <BarChart
-          data={data}
-          margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
-        >
-          <CartesianGrid strokeDasharray="3 3" />
-          <XAxis dataKey="category" />
-          <YAxis allowDecimals={false} />
-          <Tooltip />
-          <Bar
-            dataKey="count"
-            onClick={(data, index) => handleBarClick(data, index)}
-            barSize={80}
-            cursor="pointer"
-          >
-            {data.map((entry, index) => (
-              <Cell
-                key={`cell-${index}`}
-                fill={COLORS[index % COLORS.length]}
-              />
-            ))}
-          </Bar>
-        </BarChart>
-      </ResponsiveContainer>
+      <div className="category-chart-header">
+        <h2>Statistics by category</h2>
+      </div>
 
+      <div className="category-chart-body">
+        <svg ref={svgRef} />
+      </div>
+
+      {/* FILTER BADGE ispod grafa – identičan SubcategoryChartu */}
       {activeFilter && (
         <div className="category-chart__filter-container">
           <div
             className="category-chart__filter-badge"
             style={{ backgroundColor: activeColor || "#82ca9d" }}
-            onMouseEnter={(e) =>
-              (e.currentTarget.style.backgroundColor = darkenColor(
-                activeColor || "#82ca9d"
-              ))
-            }
-            onMouseLeave={(e) =>
-              (e.currentTarget.style.backgroundColor = activeColor || "#82ca9d")
-            }
           >
             <span className="category-chart__filter-text">
               {activeFilter} ({articles.length})
@@ -204,7 +264,7 @@ const CategoryChart = () => {
         </div>
       )}
 
-      {/* Chart table with local info block */}
+      {/* tablica / kartice + lokalni info block (kao i prije) */}
       <div
         className={`category-chart__content-wrapper${
           showInfoBlock ? " gap-visible" : ""
@@ -222,7 +282,6 @@ const CategoryChart = () => {
           )}
         </div>
 
-        {/* Local info block for the chart */}
         <div
           className={`category-chart__info-block-animated${
             showInfoBlock ? " visible" : ""
