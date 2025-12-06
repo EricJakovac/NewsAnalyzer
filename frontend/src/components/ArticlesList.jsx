@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from "react";
 
+const BASE_URL = process.env.REACT_APP_API_URL;
+
 const ArticlesList = ({ topic }) => {
   const [articles, setArticles] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -9,7 +11,7 @@ const ArticlesList = ({ topic }) => {
     if (!topic) return;
 
     setLoading(true);
-    fetch(`http://localhost:5000/articles/${topic}`)
+    fetch(`${BASE_URL}/articles/${topic}`)
       .then((res) => {
         if (!res.ok) throw new Error("Failed to fetch articles");
         return res.json();

@@ -5,7 +5,7 @@ import Table from "../Table/Table";
 import Cards from "../Cards/Cards";
 import "./CategoryChart.css";
 
-const BASE_URL = "http://localhost:5000";
+const BASE_URL = process.env.REACT_APP_API_URL;
 
 const COLORS = [
   "#8884d8",

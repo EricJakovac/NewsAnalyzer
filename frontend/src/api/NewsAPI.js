@@ -1,6 +1,6 @@
 import axios from "axios";
 
-const BASE_URL = "http://localhost:5000";
+const BASE_URL = process.env.REACT_APP_API_URL;
 
 export const fetchArticles = async (topic) => {
   try {
@@ -53,7 +53,7 @@ export const searchArticles = async (query, index) => {
 export const getTopHeadlines = async () => {
   try {
     const response = await axios.get(`${BASE_URL}/top-headlines`);
-    return response.data; // Backend vraća direktno array, ne { articles: [...] }
+    return response.data; // flask vraća direktno array, ne { articles: [...] }
   } catch (error) {
     console.error("Error getting top headlines:", error);
     throw error;

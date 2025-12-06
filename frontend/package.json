@@ -8,6 +8,7 @@
     "@testing-library/react": "^16.3.0",
     "@testing-library/user-event": "^13.5.0",
     "axios": "^1.9.0",
+    "d3": "^7.9.0",
     "leaflet": "^1.9.4",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
@@ -21,15 +22,15 @@
     "concurrently": "^8.2.2"
   },
   "scripts": {
-  "install-frontend": "npm install",
-  "install-backend": "python -m pip install -r ../backend/requirements.txt",
-  "start": "react-scripts --openssl-legacy-provider start",
-  "start-backend": "cd ../backend && python app.py",
-  "dev": "concurrently -k \"npm run install-frontend && npm run start\" \"npm run install-backend && npm run start-backend\"",
-  "build": "react-scripts --openssl-legacy-provider build",
-  "test": "react-scripts test",
-  "eject": "react-scripts eject",
-  "setup": "python -m venv ..\\venv && powershell -Command \"& ..\\venv\\Scripts\\python.exe -m pip install -r ..\\backend\\requirements.txt\""
+    "install-frontend": "npm install",
+    "install-backend": "python -m pip install -r ../backend/requirements.txt",
+    "start": "react-scripts --openssl-legacy-provider start",
+    "start-backend": "cd ../backend && python app.py",
+    "dev": "concurrently -k \"npm run install-frontend && npm run start\" \"npm run install-backend && npm run start-backend\"",
+    "build": "react-scripts --openssl-legacy-provider build",
+    "test": "react-scripts test",
+    "eject": "react-scripts eject",
+    "setup": "python -m venv ..\\venv && powershell -Command \"& ..\\venv\\Scripts\\python.exe -m pip install -r ..\\backend\\requirements.txt\""
   },
   "proxy": "http://localhost:5000",
   "eslintConfig": {

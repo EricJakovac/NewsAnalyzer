@@ -31,7 +31,7 @@ FRONTEND
 -pokretanje projekta -> npm start
 
 MONGODB
-- spajanje na mongodb pomocu command pallete-a (ctrl+shift+p) MONGODB: Connect with connection string... -> mongodb+srv://jakovaceric:biljar12345@cluster0.yi304.mongodb.net/
+- spajanje na mongodb pomocu command pallete-a (ctrl+shift+p) MONGODB: Connect with connection string... -> mongodb+srv://<db_username>:<db_password>@cluster0.yi304.mongodb.net/
 
 ELASTICSEARCH
-- pokrenuti elastic search u Docker desktopu (treba vidjeti kako dodati novi projekt na docker desktop ako vec ne postoji)
+- dodao sam docker-compose.yml file i samo se pokrece u root folderu -> docker-compose up
