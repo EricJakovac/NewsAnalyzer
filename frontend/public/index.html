@@ -29,15 +29,40 @@
   <body>
     <noscript>You need to enable JavaScript to run this app.</noscript>
     <div id="root"></div>
-    <!--
-      This HTML file is a template.
-      If you open it directly in the browser, you will see an empty page.
 
-      You can add webfonts, meta tags, or analytics to this file.
-      The build step will place the bundled scripts into the <body> tag.
+   <!-- === ChatBot.com Widget START === -->
+    <script>
+      window.__ow = window.__ow || {};
+      window.__ow.organizationId = "f82869d3-5a97-431c-ada5-67e5d7d0e57d";
+      window.__ow.template_id = "f050cf46-2072-4300-b5a3-b4e663d70734";
+      window.__ow.integration_name = "manual_settings";
+      window.__ow.product_name = "chatbot";
+      (function(n, t, c) {
+          function i(n) { return e._h ? e._h.apply(null, n) : e._q.push(n); }
+          var e = { _q: [], _h: null, _v: "2.0",
+              on: function() { i(["on", c.call(arguments)]) },
+              once: function() { i(["once", c.call(arguments)]) },
+              off: function() { i(["off", c.call(arguments)]) },
+              get: function() {
+                  if (!e._h) throw new Error("[OpenWidget] Getters can't be used before load.");
+                  return i(["get", c.call(arguments)])
+              },
+              call: function() { i(["call", c.call(arguments)]) },
+              init: function() {
+                  var n = t.createElement("script");
+                  n.async = !0;
+                  n.type = "text/javascript";
+                  n.src = "https://cdn.openwidget.com/openwidget.js";
+                  t.head.appendChild(n)
+              }
+          };
+          !n.__ow.asyncInit && e.init();
+          n.OpenWidget = n.OpenWidget || e;
+      }(window, document, [].slice));
+    </script>
 
-      To begin the development, run `npm start` or `yarn start`.
-      To create a production bundle, use `npm run build` or `yarn build`.
-    -->
+    <noscript>You need JavaScript enabled to use this chatbot.</noscript>
+    <!-- === ChatBot.com Widget END === -->
+
   </body>
 </html>
