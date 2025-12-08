@@ -1,10 +1,10 @@
 from collections_map import collections_map, top_headlines_collection
-from elastic_search import es
 from flask import Flask, jsonify, request
 from flask_cors import CORS
 from mongo import clusters_collection
 from news_classifier import train_classifier_for_topic, train_top_headlines_classifier
 from news_fetcher import fetch_articles_by_topic, fetch_top_headlines
+from elastic_search import search_es
 
 app = Flask(__name__)
 CORS(app)
@@ -42,7 +42,7 @@ def fetch_articles_route():
 @app.route("/top-headlines", methods=["GET"])
 def get_top_headlines():
     # Vraća sve headline članke, uključujući category polje
-    headlines = list(top_headlines_collection.find({"category": {"$exists": True}}, {"_id": 0}))
+    headlines = list(top_headlines_collection.find({"category": {"$exists": True}}, {"_id": 0}).sort("publishedAt", -1))
     if not headlines:
         return jsonify({"message": "No top headlines found"}), 404
 
@@ -101,26 +101,28 @@ def train_top_headlines():
 @app.route("/search", methods=["GET"])
 def search_articles():
     query = request.args.get("q", "")
-    index = request.args.get("index")
-
-    if not query:
-        return jsonify({"error": "Query parameter 'q' is required"}), 400
-
-    if not index:
-        return jsonify({"error": "Query parameter 'index' is required"}), 400
-
-    body = {"query": {"multi_match": {"query": query, "fields": ["title^3", "description", "subcategory", "category"]}}}
-
+    index = request.args.get("index", "").lower()
+    
+    if not query or not index:
+        return jsonify({"error": "Treba q i index"}), 400
+    
     try:
-        res = es.search(index=index, body=body)
+        result = search_es(index, query)
+        hits = result.get("hits", {}).get("hits", [])
+        
+        results = []
+        for hit in hits:
+            data = hit["_source"]
+            data["_score"] = hit.get("_score", 0)
+            results.append(data)
+        
+        return jsonify({
+            "results": results,
+            "total": len(results)
+        })
+        
     except Exception as e:
         return jsonify({"error": str(e)}), 500
-
-    hits = res["hits"]["hits"]
-    results = [hit["_source"] for hit in hits]
-
-    return jsonify({"results": results})
-
 
 # Dohvacanje articla s subcategory za vizualizaciju
 @app.route("/subcategory-stats")

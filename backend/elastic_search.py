@@ -1,12 +1,49 @@
 import hashlib
+import os
+import requests
+from dotenv import load_dotenv
+import urllib3
 
-from elasticsearch import Elasticsearch
+# Disable warnings
+urllib3.disable_warnings()
 
-es = Elasticsearch("http://localhost:9200")
+load_dotenv()
 
+ES_URL = os.getenv("ELASTIC_URL")
+ES_USER = os.getenv("ELASTIC_USER")
+ES_PASS = os.getenv("ELASTIC_PASS")
+
+def search_es(index, query):
+    """Pretraži u Bonsai - JEDNOSTAVNO"""
+    url = f"{ES_URL}/{index}/_search"
+    
+    body = {
+        "query": {
+            "multi_match": {
+                "query": query,
+                "fields": ["title", "description"]
+            }
+        },
+        "size": 20
+    }
+    
+    try:
+        r = requests.get(
+            url,
+            json=body,
+            auth=(ES_USER, ES_PASS),
+            verify=False,
+            timeout=10
+        )
+        return r.json()
+    except Exception as e:
+        print(f"Search error: {e}")
+        return {"hits": {"hits": []}}
 
 def index_article_es(article):
-    index_name = article.get("topic", "general").lower()
+    """Indexiraj članak u Bonsai - JEDNOSTAVNO"""
+    index = article.get("topic", "general").lower()
+    
     doc = {
         "title": article.get("title", ""),
         "description": article.get("description", ""),
@@ -14,6 +51,20 @@ def index_article_es(article):
         "publishedAt": article.get("publishedAt", ""),
         "subcategory": article.get("subcategory", ""),
         "category": article.get("category", ""),
-        "fetched_at": article.get("fetched_at", None),
     }
-    es.index(index=index_name, id=hashlib.md5(doc["url"].encode("utf-8")).hexdigest(), document=doc)
+    
+    doc_id = hashlib.md5(doc["url"].encode()).hexdigest()
+    url = f"{ES_URL}/{index}/_doc/{doc_id}"
+    
+    try:
+        r = requests.put(
+            url,
+            json=doc,
+            auth=(ES_USER, ES_PASS),
+            verify=False,
+            timeout=10
+        )
+        return r.json()
+    except Exception as e:
+        print(f"ES error: {e}")
+        return None

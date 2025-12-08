@@ -1,91 +1,79 @@
-import hashlib
+#Promjenjen je kod na opensearch koji direktno bulka indexe u bonsai/elasticsearch(cloud) i pokrece se rucno u venvu
 
+import hashlib
+import os
+from pymongo import MongoClient
+from opensearchpy import OpenSearch
+from opensearchpy.helpers import bulk
 from collections_map import collections_map
 from config import MONGO_URI
-from elasticsearch import Elasticsearch, helpers
-from elasticsearch.exceptions import NotFoundError
-from pymongo import MongoClient
+from dotenv import load_dotenv
+from opensearchpy.exceptions import NotFoundError
 
-# Povezivanje na MongoDB
+load_dotenv()
+
+# Mongo
 client = MongoClient(MONGO_URI)
 db = client["news_db"]
 
-es = Elasticsearch("http://localhost:9200")
+# OpenSearch
+ES_HOST = os.getenv("ELASTIC_URL")
+ES_USER = os.getenv("ELASTIC_USER")
+ES_PASS = os.getenv("ELASTIC_PASS")
 
+es = OpenSearch(
+    hosts=[ES_HOST],
+    http_auth=(ES_USER, ES_PASS),
+    use_ssl=True,
+    verify_certs=True,
+)
 
 def generate_actions(articles, index_name):
     for article in articles:
         url = article.get("url", "")
-        # Hashiraj URL u MD5 da dobiješ fiksnu dužinu ID-ja
-        url_hash = hashlib.md5(url.encode("utf-8")).hexdigest()
         yield {
             "_index": index_name,
-            "_id": url_hash,
-            "_source": {
-                "title": article.get("title", ""),
-                "description": article.get("description", ""),
-                "url": url,
-                "publishedAt": article.get("publishedAt", ""),
-                "subcategory": article.get("subcategory", ""),
-                "category": article.get("category", ""),
-                "fetched_at": article.get("fetched_at", ""),
-            },
+            "_id": hashlib.md5(url.encode()).hexdigest(),
+            "_source": article
         }
 
 
-def bulk_index_collection(collection_name, collection):
-    print(f"Dohvaćam članke iz kolekcije '{collection_name}'...")
-    articles = list(collection.find({}, {"_id": 0}))
-    print(f"Pronađeno {len(articles)} članaka u '{collection_name}'.")
+def bulk_index_collection(name, collection):
+    print("Indexing:", name)
 
-    index_name = collection_name.lower()
+    articles = list(collection.find({}, {"_id":0}))
 
     try:
-        es.indices.get(index=index_name)
-        index_exists = True
+        es.indices.get(index=name)
+        es.indices.delete(index=name)
     except NotFoundError:
-        index_exists = False
-
-    if index_exists:
-        print(f"Brišem postojeći Elasticsearch indeks '{index_name}'...")
-        es.indices.delete(index=index_name)
+        pass
 
     mapping = {
         "mappings": {
             "properties": {
-                "title": {
-                    "type": "text",
-                    "fields": {"keyword": {"type": "keyword", "ignore_above": 256}},
-                },
-                "description": {"type": "text"},
-                "url": {"type": "keyword"},
-                "publishedAt": {"type": "date", "format": "strict_date_optional_time||epoch_millis"},
-                "subcategory": {"type": "keyword"},
-                "category": {"type": "keyword"},
-                "fetched_at": {"type": "date", "format": "strict_date_optional_time||epoch_millis"},
+                "title": {"type":"text"},
+                "description": {"type":"text"},
+                "url": {"type":"keyword"},
+                "subcategory":{"type":"keyword"},
+                "category":{"type":"keyword"},
+                "publishedAt":{"type":"date"},
+                "fetched_at":{"type":"date"},
             }
         }
     }
 
-    try:
-        print(f"Kreiram novi indeks '{index_name}' s mappingom...")
-        es.indices.create(index=index_name, body=mapping)
-    except Exception as e:
-        print(f"Greška pri kreiranju indeksa '{index_name}': {e}")
-        return
+    es.indices.create(index=name, body=mapping)
 
-    try:
-        print(f"Pokrećem bulk indeksiranje za '{collection_name}'...")
-        helpers.bulk(es, generate_actions(articles, index_name))
-        print(f"Bulk indeksiranje za '{collection_name}' završeno.\n")
-    except Exception as e:
-        print(f"Greška pri bulk indeksiranju za '{collection_name}': {e}")
+    bulk(es, generate_actions(articles, name))
+
+    print("Done!")
 
 
-def bulk_index_all_collections():
+def bulk_index_all():
     for name, coll in collections_map.items():
         bulk_index_collection(name, coll)
 
 
 if __name__ == "__main__":
-    bulk_index_all_collections()
+    bulk_index_all()
