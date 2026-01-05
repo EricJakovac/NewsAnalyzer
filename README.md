@@ -13,5 +13,3 @@ Tech Stack:
 
 Pokretanje projekta
 - cijela aplikacija se pokrece naredbom docker-compose up --build za lokalno okruženje, a inače se nalazi na linku https://news-analyzer-pi.vercel.app/
-
-*napomena - maknuti su svi osjetljivi podaci odnosno environment variables

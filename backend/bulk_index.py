@@ -1,28 +1,19 @@
 #Promjenjen je kod na opensearch koji direktno bulka indexe u bonsai/elasticsearch(cloud) i pokrece se rucno u venvu
 
 import hashlib
-import os
 from pymongo import MongoClient
 from opensearchpy import OpenSearch
 from opensearchpy.helpers import bulk
 from collections_map import collections_map
-from config import MONGO_URI
-from dotenv import load_dotenv
 from opensearchpy.exceptions import NotFoundError
-
-load_dotenv()
+from config import MONGO_URI, ES_URL, ES_USER, ES_PASS
 
 # Mongo
 client = MongoClient(MONGO_URI)
 db = client["news_db"]
 
-# OpenSearch
-ES_HOST = os.getenv("ELASTIC_URL")
-ES_USER = os.getenv("ELASTIC_USER")
-ES_PASS = os.getenv("ELASTIC_PASS")
-
 es = OpenSearch(
-    hosts=[ES_HOST],
+    hosts=[ES_URL],
     http_auth=(ES_USER, ES_PASS),
     use_ssl=True,
     verify_certs=True,

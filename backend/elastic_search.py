@@ -1,17 +1,10 @@
 import hashlib
-import os
 import requests
-from dotenv import load_dotenv
 import urllib3
+from config import ES_URL, ES_USER, ES_PASS
 
 # Disable warnings
 urllib3.disable_warnings()
-
-load_dotenv()
-
-ES_URL = os.getenv("ELASTIC_URL")
-ES_USER = os.getenv("ELASTIC_USER")
-ES_PASS = os.getenv("ELASTIC_PASS")
 
 def search_es(index, query):
     """Pretraži u Bonsai - JEDNOSTAVNO"""
