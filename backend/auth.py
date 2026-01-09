@@ -34,7 +34,7 @@ def get_flow():
         redirect_uri=redirect_uri
     )
 
-@auth_bp.route("/auth/login")
+@auth_bp.route("/login")
 def login():
     flow = get_flow()
     auth_url, state = flow.authorization_url(
@@ -45,7 +45,7 @@ def login():
     session["state"] = state
     return redirect(auth_url)
 
-@auth_bp.route("/auth/callback")
+@auth_bp.route("/callback")
 def callback():
     flow = get_flow()
     # Dohvaćanje tokena pomoću koda koji je Google poslao
@@ -57,7 +57,7 @@ def callback():
     service = build('oauth2', 'v2', credentials=credentials)
     user_info = service.userinfo().get().execute()
     
-    # Spremamo korisnika u sesiju (ovo React čita preko /auth/me)
+    # Spremamo korisnika u sesiju (ovo React čita preko /me)
     session["user"] = {
         "name": user_info.get("name"),
         "picture": user_info.get("picture"),
@@ -68,14 +68,14 @@ def callback():
     frontend_url = os.getenv("FRONTEND_URL", "https://news-analyzer-pi.vercel.app")
     return redirect(frontend_url)
 
-@auth_bp.route("/auth/me")
+@auth_bp.route("/me")
 def get_me():
     user = session.get("user")
     if user:
         return jsonify(user), 200
     return jsonify({"error": "Not logged in"}), 401
 
-@auth_bp.route("/auth/logout")
+@auth_bp.route("/logout")
 def logout():
     session.clear()
     frontend_url = os.getenv("FRONTEND_URL", "https://news-analyzer-pi.vercel.app")

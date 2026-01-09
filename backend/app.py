@@ -36,7 +36,7 @@ CORS(app,
      origins=[frontend_url, "http://localhost:3000"]
 )
 
-app.register_blueprint(auth_bp)
+app.register_blueprint(auth_bp, url_prefix="/auth")
 #app.register_blueprint(analytics_bp)
 
 # Dohvacanje top headlinesa s API
