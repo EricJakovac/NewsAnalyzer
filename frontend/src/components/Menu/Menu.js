@@ -10,6 +10,8 @@ import { FaComputer } from "react-icons/fa6";
 import "./Menu.css";
 import { GiHamburgerMenu } from "react-icons/gi";
 import { IoClose } from "react-icons/io5";
+import { FaSignInAlt } from "react-icons/fa";
+import { FaSignOutAlt } from "react-icons/fa";
 
 const categoryIcons = {
   General: <MdPublic className="menu-icon" size={22} />,
@@ -21,7 +23,14 @@ const categoryIcons = {
   Technology: <FaComputer className="menu-icon" size={22} />,
 };
 
-function Menu({ onSelectMenu, selectedMenu, isCollapsed, setIsCollapsed }) {
+function Menu({
+  onSelectMenu,
+  selectedMenu,
+  isCollapsed,
+  setIsCollapsed,
+  user,
+  onLogout,
+}) {
   const newsCategories = [
     "General",
     "Business",
@@ -59,6 +68,39 @@ function Menu({ onSelectMenu, selectedMenu, isCollapsed, setIsCollapsed }) {
           )}
           {!isCollapsed && <span className="menu-label">Menu</span>}
         </li>
+
+        {/* DINAMIČKI AUTH ILI USER PROFILE */}
+        {!user ? (
+          <li
+            className={`menu-item clickable ${
+              selectedMenu === "auth" ? "active" : ""
+            }`}
+            onClick={() => onSelectMenu("auth")}
+          >
+            <FaSignInAlt className="menu-icon" size={22} />
+            {!isCollapsed && <span className="menu-label">Login</span>}
+          </li>
+        ) : (
+          <>
+            {/* Prikaz korisnika */}
+            <li className="menu-item user-profile">
+              {user.picture ? (
+                <img src={user.picture} alt="User" className="user-avatar" />
+              ) : (
+                <div className="user-avatar-placeholder">
+                  {user.name?.charAt(0)}
+                </div>
+              )}
+              {!isCollapsed && <span className="menu-label">{user.name}</span>}
+            </li>
+
+            {/* Logout gumb */}
+            <li className="menu-item clickable logout-item" onClick={onLogout}>
+              <FaSignOutAlt className="menu-icon" size={22} color="#ff4d4d" />
+              {!isCollapsed && <span className="menu-label">Logout</span>}
+            </li>
+          </>
+        )}
 
         {/* HOME */}
         <li

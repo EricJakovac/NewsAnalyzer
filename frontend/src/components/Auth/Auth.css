@@ -1,0 +1,27 @@
+.google-login-btn {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background-color: white;
+  color: #3c4043;
+  border: 1px solid #dadce0;
+  padding: 10px 24px;
+  border-radius: 4px;
+  font-size: 16px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s, box-shadow 0.2s;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  margin-top: 15px;
+  font-family: 'Roboto', 'Segoe UI', Tahoma, sans-serif; 
+  letter-spacing: 0.25px; 
+}
+
+.google-login-btn:hover {
+  background-color: #f8f9fa;
+  box-shadow: 0 1px 2px 0 rgba(60,64,67,0.30), 0 1px 3px 1px rgba(60,64,67,0.15);
+}
+
+.google-login-btn:active {
+  background-color: #f1f3f4;
+}

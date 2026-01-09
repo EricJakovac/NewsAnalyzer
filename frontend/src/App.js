@@ -15,6 +15,7 @@ import Toast from "./components/Toast/Toast";
 import SubcategoryChart from "./components/Charts/SubcategoryChart";
 import CategoryChart from "./components/Charts/CategoryChart";
 import Cards from "./components/Cards/Cards";
+import Auth from "./components/Auth/Auth";
 
 function App() {
   const isMobile = window.innerWidth < 768;
@@ -48,6 +49,7 @@ function App() {
   const getCategoryDisplayName = useCallback((menu) => {
     const displayMap = {
       home: "Top Headlines",
+      auth: "Google Analytics Authentication",
       general: "General",
       business: "Business",
       entertainment: "Entertainment",
@@ -63,6 +65,7 @@ function App() {
   const getCategorySubtitle = useCallback((menu) => {
     const subtitleMap = {
       home: "Breaking stories that shape your world today",
+      auth: "Manage your Google OAuth connection and session cookies",
       general: "General world news and trending topics",
       business: "Latest market moves and business insights",
       entertainment: "Your daily dose of entertainment buzz",
@@ -91,6 +94,7 @@ function App() {
 
   // Load articles based on selected menu
   const loadArticles = useCallback(async () => {
+    if (["auth"].includes(selectedMenu)) return; // Ne radi nista ako smo na auth tabu
     try {
       setLoading(true);
       setError(null);
@@ -230,6 +234,7 @@ function App() {
 
   // Load articles on tab change or when search is cleared
   useEffect(() => {
+    if (selectedMenu === "auth") return; // Ne radi nista ako smo na auth tabu
     if (!searchQuery.trim()) {
       loadArticles();
     }
@@ -258,7 +263,6 @@ function App() {
     }
   };
 
-
   const handleMenuSelect = (menu) => {
     setSelectedMenu(menu);
     setSearchQuery("");
@@ -266,11 +270,47 @@ function App() {
     setSelectedArticle(null);
     setSelectedMenu(menu);
 
+    if (menu === "auth") return;
+
     // Scroll to top of main content
     if (mainContentRef.current) {
       mainContentRef.current.scrollTo({ top: 0, behavior: "smooth" });
     }
   };
+
+  const [user, setUser] = useState(null);
+
+  // Funkcija za logout
+  const handleLogout = () => {
+    window.location.href = `${process.env.REACT_APP_API_URL}/auth/logout`;
+    setUser(null);
+    setSelectedMenu("home");
+  };
+
+  useEffect(() => {
+    const fetchUser = async () => {
+      try {
+        // Važno: credentials 'include' omogućuje slanje cookies-a backendu
+        const response = await fetch(
+          `${process.env.REACT_APP_API_URL}/auth/me`,
+          {
+            credentials: "include",
+          }
+        );
+
+        if (response.ok) {
+          const userData = await response.json();
+          setUser(userData); // Ovdje punimo 'user' state
+          // Opcionalno: ako želiš da ga odmah makne s Auth ekrana na Home
+          // setSelectedMenu("home");
+        }
+      } catch (error) {
+        console.error("Korisnik nije ulogiran", error);
+      }
+    };
+
+    fetchUser();
+  }, []);
 
   return (
     <div className="App">
@@ -285,7 +325,7 @@ function App() {
       <div
         className={`main-content ${
           isSidebarCollapsed ? "main-content-collapsed" : ""
-        }`}
+        } ${selectedMenu === "auth" ? "auth-page-active" : ""}`}
         ref={mainContentRef}
       >
         <div className="category-header">
@@ -296,255 +336,278 @@ function App() {
             {getCategorySubtitle(selectedMenu)}
           </p>
         </div>
-
-        <Search
-          value={searchQuery}
-          onInputChange={onInputChange}
-          onSearch={handleSearch}
-          onRefresh={handleRefresh}
-          loading={loading}
-          refreshing={refreshing}
-          placeholder={`Search ${getCategoryDisplayName(
-            selectedMenu
-          ).toLowerCase()} articles...`}
-          onClear={handleClear}
-          autoFocus={true}
-        />
-
-        {/* Show chart for tabs with subcategories except for topic "general" */}
-        {tabsWithSubcategory.includes(selectedMenu) &&
-          selectedMenu !== "general" &&
-          !searchQuery.trim() && (
-            <div className="subcategory-chart-wrapper">
-              <SubcategoryChart topic={selectedMenu} />
-            </div>
-          )}
-
-        {/* Show CategoryChart for home tab */}
-        {selectedMenu === "home" && !searchQuery.trim() && (
-          <div className="category-chart-wrapper">
-            <CategoryChart />
+        {/* JEDNOSTAVNA LOGIKA ZA AUTH STRANICE */}
+        {selectedMenu === "auth" ? (
+          <div className="auth-page-wrapper">
+            <Auth user={user} onLogout={handleLogout} />
           </div>
-        )}
+        ) : (
+          <>
+            <Search
+              value={searchQuery}
+              onInputChange={onInputChange}
+              onSearch={handleSearch}
+              onRefresh={handleRefresh}
+              loading={loading}
+              refreshing={refreshing}
+              placeholder={`Search ${getCategoryDisplayName(
+                selectedMenu
+              ).toLowerCase()} articles...`}
+              onClear={handleClear}
+              autoFocus={true}
+            />
 
-        <div className={`content-wrapper${showInfoBlock ? " gap-visible" : ""}`}>
-          {/* DODAJ OVAJ BLOK - Show Table for other subcategory tabs when searching */}
-          {tabsWithSubcategory.includes(selectedMenu) &&
-            selectedMenu !== "general" &&
-            selectedMenu !== "home" &&
-            searchQuery.trim() && (
-              <div className={`table-container${showInfoBlock ? " table-shrink" : ""}`}>
-                {loading ? (
-                  <div className="loading">
-                    <p>
-                      Searching {getCategoryDisplayName(selectedMenu).toLowerCase()} articles...
-                    </p>
-                  </div>
-                ) : error ? (
-                  <div className="error">
-                    <p>Can't load data. Please refresh again.</p>
-                  </div>
-                ) : articles.length === 0 ? (
-                  <div className="no-results">
-                    <p>
-                      No articles found for "{searchQuery}" in {getCategoryDisplayName(selectedMenu).toLowerCase()}.
-                    </p>
-                  </div>
-                ) : (
-                  <>
-                    <div className="search-results-info">
-                      <p>
-                        Found {articles.length} article{articles.length !== 1 ? "s" : ""} for "{searchQuery}" in {getCategoryDisplayName(selectedMenu).toLowerCase()}
-                      </p>
-                    </div>
-                    <Table
-                      data={articles}
-                      onRowClick={handleRowClick}
-                      showAdditionalButtons={!showInfoBlock}
-                    />
-                  </>
-                )}
+            {/* Show chart for tabs with subcategories except for topic "general" */}
+            {tabsWithSubcategory.includes(selectedMenu) &&
+              selectedMenu !== "general" &&
+              !searchQuery.trim() && (
+                <div className="subcategory-chart-wrapper">
+                  <SubcategoryChart topic={selectedMenu} />
+                </div>
+              )}
+
+            {/* Show CategoryChart for home tab */}
+            {selectedMenu === "home" && !searchQuery.trim() && (
+              <div className="category-chart-wrapper">
+                <CategoryChart />
               </div>
             )}
-          {/* Show Table with search results for home tab when searching */}
-          {selectedMenu === "home" && searchQuery.trim() && (
-            <div className="table-container">
-              {loading ? (
-                <div className="loading">
-                  <p>
-                    Searching top headlines...
-                  </p>
-                </div>
-              ) : error ? (
-                <div className="error">
-                  <p>Can't load data. Please refresh again.</p>
-                </div>
-              ) : articles.length === 0 ? (
-                <div className="no-results">
-                  <p>
-                    No top headlines found for "{searchQuery}".
-                  </p>
-                </div>
-              ) : (
-                <>
-                  <div className="search-results-info">
-                    <p>
-                      Found {articles.length} article{articles.length !== 1 ? "s" : ""} for "{searchQuery}" in top headlines
-                    </p>
-                  </div>
-                  <Table
-                    data={articles}
-                    onRowClick={handleRowClick}
-                    showAdditionalButtons={!showInfoBlock}
-                  />
-                </>
-              )}
-            </div>
-          )}
-          {selectedMenu === "general" && (
+
             <div
-              className={`table-container${showInfoBlock ? " table-shrink" : ""
-                }`}
-            >
-              {loading ? (
-                <div className="loading">
-                  <p>
-                    Loading {getCategoryDisplayName(selectedMenu).toLowerCase()}{" "}
-                    articles...
-                  </p>
-                </div>
-              ) : error ? (
-                <div className="error">
-                  <p>Can't load data. Please refresh again.</p>
-                </div>
-              ) : articles.length === 0 ? (
-                <div className="no-results">
-                  <p>
-                    {searchQuery.trim()
-                      ? `No articles found for "${searchQuery}" in ${getCategoryDisplayName(
-                        selectedMenu
-                      ).toLowerCase()}.`
-                      : `No ${getCategoryDisplayName(
-                        selectedMenu
-                      ).toLowerCase()} articles found.`}
-                  </p>
-                </div>
-              ) : (
-                <>
-                  {searchQuery.trim() && (
-                    <div className="search-results-info">
-                      <p>
-                        Found {articles.length} article
-                        {articles.length !== 1 ? "s" : ""} for "{searchQuery}"
-                        in {getCategoryDisplayName(selectedMenu).toLowerCase()}
-                      </p>
-                    </div>
-                  )}
-                  {isMobile ? (
-                    <Cards data={articles} onRowClick={handleRowClick} />
-                  ) : (
-                    <Table data={articles} onRowClick={handleRowClick} />
-                  )}
-                </>
-              )}
-            </div>
-          )}
-
-          {/* Info block remains visible if needed */}
-          <div
-            className={`right-blocks info-block-animated${showInfoBlock ? " visible" : ""
+              className={`content-wrapper${
+                showInfoBlock ? " gap-visible" : ""
               }`}
-          >
-            <div className="info-block">
-              {selectedArticle ? (
-                <>
-                  <div className="info-block-header">
-                    <h3>Article Details</h3>
-                    <button
-                      className="close-info-btn"
-                      onClick={() => {
-                        setShowInfoBlock(false);
-                        setSelectedArticle(null);
-                      }}
-                    >
-                      ×
-                    </button>
-                  </div>
-                  <div className="info-block-content">
-                    <div className="article-field">
-                      <strong>Title:</strong>
-                      <p>{selectedArticle.title}</p>
-                    </div>
-
-                    <div className="article-field">
-                      <strong>Category:</strong>
-                      <span className="category-tag">
-                        {selectedMenu === "home"
-                          ? selectedArticle.category || "General"
-                          : getCategoryDisplayName(selectedMenu)}
-                      </span>
-                    </div>
-
-                    {selectedMenu !== "home" && selectedArticle.subcategory && (
-                      <div className="article-field">
-                        <strong>Subcategory:</strong>
-                        <span className="subcategory-tag">
-                          {selectedArticle.subcategory}
-                        </span>
+            >
+              {/* DODAJ OVAJ BLOK - Show Table for other subcategory tabs when searching */}
+              {tabsWithSubcategory.includes(selectedMenu) &&
+                selectedMenu !== "general" &&
+                selectedMenu !== "home" &&
+                searchQuery.trim() && (
+                  <div
+                    className={`table-container${
+                      showInfoBlock ? " table-shrink" : ""
+                    }`}
+                  >
+                    {loading ? (
+                      <div className="loading">
+                        <p>
+                          Searching{" "}
+                          {getCategoryDisplayName(selectedMenu).toLowerCase()}{" "}
+                          articles...
+                        </p>
                       </div>
+                    ) : error ? (
+                      <div className="error">
+                        <p>Can't load data. Please refresh again.</p>
+                      </div>
+                    ) : articles.length === 0 ? (
+                      <div className="no-results">
+                        <p>
+                          No articles found for "{searchQuery}" in{" "}
+                          {getCategoryDisplayName(selectedMenu).toLowerCase()}.
+                        </p>
+                      </div>
+                    ) : (
+                      <>
+                        <div className="search-results-info">
+                          <p>
+                            Found {articles.length} article
+                            {articles.length !== 1 ? "s" : ""} for "
+                            {searchQuery}" in{" "}
+                            {getCategoryDisplayName(selectedMenu).toLowerCase()}
+                          </p>
+                        </div>
+                        <Table
+                          data={articles}
+                          onRowClick={handleRowClick}
+                          showAdditionalButtons={!showInfoBlock}
+                        />
+                      </>
                     )}
-
-                    <div className="article-field">
-                      <strong>Description:</strong>
-                      <p>
-                        {selectedArticle.description ||
-                          "No description available"}
-                      </p>
-                    </div>
-
-                    <div className="article-field">
-                      <strong>Published:</strong>
-                      <p>
-                        {selectedArticle.publishedAt
-                          ? new Date(
-                            selectedArticle.publishedAt
-                          ).toLocaleDateString()
-                          : "N/A"}
-                      </p>
-                    </div>
-
-                    <div className="article-field">
-                      <strong>Source:</strong>
-                      <a
-                        href={selectedArticle.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="source-link"
-                      >
-                        Read Full Article →
-                      </a>
-                    </div>
                   </div>
-                </>
-              ) : (
-                <>
-                  <div className="info-block-header">
-                    <h3>Article Details</h3>
-                    <button
-                      className="close-info-btn"
-                      onClick={() => setShowInfoBlock(false)}
-                    >
-                      ×
-                    </button>
-                  </div>
-                  <div className="info-block-content">
-                    <p>Select an article to view details here.</p>
-                  </div>
-                </>
+                )}
+              {/* Show Table with search results for home tab when searching */}
+              {selectedMenu === "home" && searchQuery.trim() && (
+                <div className="table-container">
+                  {loading ? (
+                    <div className="loading">
+                      <p>Searching top headlines...</p>
+                    </div>
+                  ) : error ? (
+                    <div className="error">
+                      <p>Can't load data. Please refresh again.</p>
+                    </div>
+                  ) : articles.length === 0 ? (
+                    <div className="no-results">
+                      <p>No top headlines found for "{searchQuery}".</p>
+                    </div>
+                  ) : (
+                    <>
+                      <div className="search-results-info">
+                        <p>
+                          Found {articles.length} article
+                          {articles.length !== 1 ? "s" : ""} for "{searchQuery}"
+                          in top headlines
+                        </p>
+                      </div>
+                      <Table
+                        data={articles}
+                        onRowClick={handleRowClick}
+                        showAdditionalButtons={!showInfoBlock}
+                      />
+                    </>
+                  )}
+                </div>
               )}
+              {selectedMenu === "general" && (
+                <div
+                  className={`table-container${
+                    showInfoBlock ? " table-shrink" : ""
+                  }`}
+                >
+                  {loading ? (
+                    <div className="loading">
+                      <p>
+                        Loading{" "}
+                        {getCategoryDisplayName(selectedMenu).toLowerCase()}{" "}
+                        articles...
+                      </p>
+                    </div>
+                  ) : error ? (
+                    <div className="error">
+                      <p>Can't load data. Please refresh again.</p>
+                    </div>
+                  ) : articles.length === 0 ? (
+                    <div className="no-results">
+                      <p>
+                        {searchQuery.trim()
+                          ? `No articles found for "${searchQuery}" in ${getCategoryDisplayName(
+                              selectedMenu
+                            ).toLowerCase()}.`
+                          : `No ${getCategoryDisplayName(
+                              selectedMenu
+                            ).toLowerCase()} articles found.`}
+                      </p>
+                    </div>
+                  ) : (
+                    <>
+                      {searchQuery.trim() && (
+                        <div className="search-results-info">
+                          <p>
+                            Found {articles.length} article
+                            {articles.length !== 1 ? "s" : ""} for "
+                            {searchQuery}" in{" "}
+                            {getCategoryDisplayName(selectedMenu).toLowerCase()}
+                          </p>
+                        </div>
+                      )}
+                      {isMobile ? (
+                        <Cards data={articles} onRowClick={handleRowClick} />
+                      ) : (
+                        <Table data={articles} onRowClick={handleRowClick} />
+                      )}
+                    </>
+                  )}
+                </div>
+              )}
+
+              {/* Info block remains visible if needed */}
+              <div
+                className={`right-blocks info-block-animated${
+                  showInfoBlock ? " visible" : ""
+                }`}
+              >
+                <div className="info-block">
+                  {selectedArticle ? (
+                    <>
+                      <div className="info-block-header">
+                        <h3>Article Details</h3>
+                        <button
+                          className="close-info-btn"
+                          onClick={() => {
+                            setShowInfoBlock(false);
+                            setSelectedArticle(null);
+                          }}
+                        >
+                          ×
+                        </button>
+                      </div>
+                      <div className="info-block-content">
+                        <div className="article-field">
+                          <strong>Title:</strong>
+                          <p>{selectedArticle.title}</p>
+                        </div>
+
+                        <div className="article-field">
+                          <strong>Category:</strong>
+                          <span className="category-tag">
+                            {selectedMenu === "home"
+                              ? selectedArticle.category || "General"
+                              : getCategoryDisplayName(selectedMenu)}
+                          </span>
+                        </div>
+
+                        {selectedMenu !== "home" &&
+                          selectedArticle.subcategory && (
+                            <div className="article-field">
+                              <strong>Subcategory:</strong>
+                              <span className="subcategory-tag">
+                                {selectedArticle.subcategory}
+                              </span>
+                            </div>
+                          )}
+
+                        <div className="article-field">
+                          <strong>Description:</strong>
+                          <p>
+                            {selectedArticle.description ||
+                              "No description available"}
+                          </p>
+                        </div>
+
+                        <div className="article-field">
+                          <strong>Published:</strong>
+                          <p>
+                            {selectedArticle.publishedAt
+                              ? new Date(
+                                  selectedArticle.publishedAt
+                                ).toLocaleDateString()
+                              : "N/A"}
+                          </p>
+                        </div>
+
+                        <div className="article-field">
+                          <strong>Source:</strong>
+                          <a
+                            href={selectedArticle.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="source-link"
+                          >
+                            Read Full Article →
+                          </a>
+                        </div>
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <div className="info-block-header">
+                        <h3>Article Details</h3>
+                        <button
+                          className="close-info-btn"
+                          onClick={() => setShowInfoBlock(false)}
+                        ></button>
+                      </div>
+                      <div className="info-block-content">
+                        <p>Select an article to view details here.</p>
+                      </div>
+                    </>
+                  )}
+                </div>
+              </div>
             </div>
-          </div>
-        </div>
+          </>
+        )}
       </div>
 
       {toast.show && (

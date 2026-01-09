@@ -5,10 +5,19 @@ from mongo import clusters_collection
 from news_classifier import train_classifier_for_topic, train_top_headlines_classifier
 from news_fetcher import fetch_articles_by_topic, fetch_top_headlines
 from elastic_search import search_es
+from auth import auth_bp
+import os
+from dotenv import load_dotenv
+#from analytics import analytics_bp
+
+load_dotenv()
+frontend_url = os.getenv("FRONTEND_URL", "http://localhost:3000")
 
 app = Flask(__name__)
-CORS(app)
-
+app.secret_key = os.getenv("FLASK_SECRET_KEY")
+CORS(app, supports_credentials=True, origins=[frontend_url, "http://localhost:3000"])
+app.register_blueprint(auth_bp)
+#app.register_blueprint(analytics_bp)
 
 # Dohvacanje top headlinesa s API
 @app.route("/fetch-top-headlines", methods=["POST"])
@@ -222,5 +231,4 @@ def articles_by_category():
 
 
 if __name__ == "__main__":
-    app.run()
-
+    app.run(host="0.0.0.0", port=int(os.getenv("PORT", 5000)))

@@ -92,3 +92,34 @@ menu.collapsed .menu-label {
 .menu-item.active .menu-label {
   color: #5a6b7b;
 }
+
+.user-avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid #4CAF50;
+}
+
+.user-avatar-placeholder {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background-color: #4CAF50;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+}
+
+.menu-divider {
+  border: 0;
+  border-top: 1px solid #eee;
+  margin: 10px 0;
+  width: 100%;
+}
+
+.logout-item:hover .menu-icon {
+  color: #ff0000 !important;
+}
