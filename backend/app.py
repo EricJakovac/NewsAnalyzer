@@ -8,6 +8,7 @@ from elastic_search import search_es
 from auth import auth_bp
 import os
 from dotenv import load_dotenv
+from werkzeug.middleware.proxy_fix import ProxyFix
 #from analytics import analytics_bp
 
 load_dotenv()
