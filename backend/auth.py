@@ -1,6 +1,6 @@
 from flask import Blueprint, redirect, request, session, url_for, jsonify
 from google_auth_oauthlib.flow import Flow
-from googleapiclient.discovery import build # Dodaj ovo za dohvaćanje profila
+from googleapiclient.discovery import build
 import os
 
 auth_bp = Blueprint("auth", __name__)
@@ -9,6 +9,15 @@ if os.getenv("FLASK_ENV") == "development":
     os.environ["OAUTHLIB_INSECURE_TRANSPORT"] = "1"
 
 def get_flow():
+    # DINAMIČKI REDIRECT URI: 
+    # Ako si na Renderu, koristi HTTPS adresu tvog backenda.
+    # Ako si lokalno, koristi url_for.
+    if os.getenv("FLASK_ENV") == "production":
+        # Zamijeni ovo URL-om svog backenda na Renderu
+        redirect_uri = "https://news-analyzer-yfcp.onrender.com/auth/callback"
+    else:
+        redirect_uri = url_for("auth.callback", _external=True)
+
     return Flow.from_client_config(
         {
             "web": {
@@ -18,22 +27,23 @@ def get_flow():
                 "token_uri": "https://oauth2.googleapis.com/token",
             }
         },
-        # DODANO: userinfo.profile i userinfo.email da dobijemo ime i sliku
         scopes=[
             "https://www.googleapis.com/auth/analytics.readonly",
             "https://www.googleapis.com/auth/userinfo.profile",
             "https://www.googleapis.com/auth/userinfo.email",
             "openid"
         ],
-        redirect_uri=url_for("auth.callback", _external=True)
+        redirect_uri=redirect_uri
     )
 
 @auth_bp.route("/auth/login")
 def login():
     flow = get_flow()
+    # prompt="consent" osigurava da se prozor UVIJEK pojavi tijekom testiranja
     auth_url, state = flow.authorization_url(
         access_type="offline",
-        include_granted_scopes="true"
+        include_granted_scopes="true",
+        prompt="consent" 
     )
     session["state"] = state
     return redirect(auth_url)

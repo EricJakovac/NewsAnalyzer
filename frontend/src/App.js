@@ -290,22 +290,26 @@ function App() {
   useEffect(() => {
     const fetchUser = async () => {
       try {
-        // Važno: credentials 'include' omogućuje slanje cookies-a backendu
+        // Ovdje je ključno: credentials mora biti dio objekta s opcijama
         const response = await fetch(
           `${process.env.REACT_APP_API_URL}/auth/me`,
           {
-            credentials: "include",
+            method: "GET", // Dobra praksa je definirati metodu
+            credentials: "include", // OVO omogućuje slanje cookies-a backendu
+            headers: {
+              "Content-Type": "application/json",
+            },
           }
         );
 
         if (response.ok) {
           const userData = await response.json();
-          setUser(userData); // Ovdje punimo 'user' state
-          // Opcionalno: ako želiš da ga odmah makne s Auth ekrana na Home
-          // setSelectedMenu("home");
+          setUser(userData);
+        } else {
+          console.log("Korisnik nije ulogiran (401)");
         }
       } catch (error) {
-        console.error("Korisnik nije ulogiran", error);
+        console.error("Greška pri dohvaćanju korisnika:", error);
       }
     };
 

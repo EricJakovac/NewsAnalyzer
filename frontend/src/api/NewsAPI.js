@@ -2,6 +2,9 @@ import axios from "axios";
 
 const BASE_URL = process.env.REACT_APP_API_URL;
 
+// Omoguci slanje kolačića sa svakim zahtjevom
+axios.defaults.withCredentials = true;
+
 export const fetchArticles = async (topic) => {
   try {
     const response = await axios.get(`${BASE_URL}/articles/${topic}`);

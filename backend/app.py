@@ -11,11 +11,30 @@ from dotenv import load_dotenv
 #from analytics import analytics_bp
 
 load_dotenv()
-frontend_url = os.getenv("FRONTEND_URL", "http://localhost:3000")
 
 app = Flask(__name__)
+
+# 1. PROXY FIX: Govori Flasku da je iza Rendera (HTTPS)
+app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1)
+
 app.secret_key = os.getenv("FLASK_SECRET_KEY")
-CORS(app, supports_credentials=True, origins=[frontend_url, "http://localhost:3000"])
+
+# 2. KONFIGURACIJA SESIJE ZA PRODUKCIJU
+# Ovo omogućuje da kolačić "preživi" put s Rendera na Vercel
+app.config.update(
+    SESSION_COOKIE_SECURE=True,     # Samo preko HTTPS
+    SESSION_COOKIE_HTTPONLY=True,   # Štiti od JS napada
+    SESSION_COOKIE_SAMESITE='None', # Dozvoljava cross-site (Vercel -> Render)
+)
+
+frontend_url = os.getenv("FRONTEND_URL", "http://localhost:3000").rstrip('/')
+
+# 3. CORS POSTAVKE
+CORS(app, 
+     supports_credentials=True, 
+     origins=[frontend_url, "http://localhost:3000"]
+)
+
 app.register_blueprint(auth_bp)
 #app.register_blueprint(analytics_bp)
 
