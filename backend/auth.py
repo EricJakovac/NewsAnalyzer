@@ -93,3 +93,31 @@ def logout():
     session.clear()
     frontend_url = os.getenv("FRONTEND_URL", "http://localhost:3000")
     return redirect(frontend_url)
+
+from flask import redirect, session, url_for
+
+@app.route('/auth/callback')
+def callback():
+    # 1. Google šalje autorizacijski kod
+    flow.fetch_token(authorization_response=request.url)
+
+    # 2. Dohvaćamo podatke o korisniku
+    credentials = flow.credentials
+    request_session = requests.session()
+    cached_session = cachecontrol.CacheControl(request_session)
+    token_request = google.auth.transport.requests.Request(session=cached_session)
+
+    id_info = id_token.verify_oauth2_token(
+        id_token=credentials._id_token,
+        request=token_request,
+        audience=os.getenv("GOOGLE_CLIENT_ID")
+    )
+
+    # 3. Spremamo korisnika u Flask session (kolačić)
+    session["google_id"] = id_info.get("sub")
+    session["name"] = id_info.get("name")
+    session["email"] = id_info.get("email")
+
+    # 4. KLJUČNI KORAK: Preusmjeravanje natrag na Vercel frontend
+    frontend_url = os.getenv("FRONTEND_URL", "https://news-analyzer-pi.vercel.app")
+    return redirect(frontend_url)
