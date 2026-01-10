@@ -53,9 +53,6 @@ def direct_auth_callback():
         frontend_url = os.getenv("FRONTEND_URL", "https://news-analyzer-pi.vercel.app")
         return redirect(frontend_url)
 
-# ONDA nastavi s:
-app.register_blueprint(auth_bp, url_prefix="/auth")
-
 app.register_blueprint(auth_bp, url_prefix="/auth")
 #app.register_blueprint(analytics_bp)
 
