@@ -36,6 +36,26 @@ CORS(app,
      origins=[frontend_url, "http://localhost:3000"]
 )
 
+# DODAJ OVO odmah nakon CORS postavki, PRIJE app.register_blueprint
+
+@app.route("/auth/callback")
+def direct_auth_callback():
+    """Direct route for Google OAuth callback"""
+    print("🔥 DIRECT /auth/callback route hit!")
+    print(f"🔥 Request URL: {request.url}")
+    
+    try:
+        # Redirect to the blueprint's callback function
+        return auth_bp.blueprint.callback()
+    except Exception as e:
+        print(f"🔥 Error in direct_auth_callback: {e}")
+        # Fallback: redirect to frontend
+        frontend_url = os.getenv("FRONTEND_URL", "https://news-analyzer-pi.vercel.app")
+        return redirect(frontend_url)
+
+# ONDA nastavi s:
+app.register_blueprint(auth_bp, url_prefix="/auth")
+
 app.register_blueprint(auth_bp, url_prefix="/auth")
 #app.register_blueprint(analytics_bp)
 
@@ -248,7 +268,6 @@ def articles_by_category():
     all_articles = all_articles[:100]
 
     return jsonify(all_articles)
-
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=int(os.getenv("PORT", 5000)))
