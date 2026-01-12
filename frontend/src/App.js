@@ -16,6 +16,7 @@ import SubcategoryChart from "./components/Charts/SubcategoryChart";
 import CategoryChart from "./components/Charts/CategoryChart";
 import Cards from "./components/Cards/Cards";
 import Auth from "./components/Auth/Auth";
+import Analytics from "./components/Analytics/Analytics";
 
 function App() {
   const isMobile = window.innerWidth < 768;
@@ -30,6 +31,7 @@ function App() {
   const [toast, setToast] = useState({ show: false, message: "", type: "" });
   const [refreshing, setRefreshing] = useState(false);
   const [selectedArticle, setSelectedArticle] = useState(null);
+  const [refreshKey, setRefreshKey] = useState(0); // Služi za resetiranje grafikona
 
   // Ref for scrollable content
   const mainContentRef = useRef(null);
@@ -57,6 +59,7 @@ function App() {
       science: "Science",
       sports: "Sports",
       technology: "Technology",
+      analytics: "Analytics Dashboard",
     };
     return displayMap[menu] || "Home";
   }, []);
@@ -73,6 +76,7 @@ function App() {
       science: "Discoveries that change everything",
       sports: "Game-changing moments and athletic achievements",
       technology: "Innovation and tech breakthroughs that matter",
+      analytics: "Visualize and understand user behavior with data",
     };
     return subtitleMap[menu] || "Stay informed, stay ahead";
   }, []);
@@ -94,7 +98,7 @@ function App() {
 
   // Load articles based on selected menu
   const loadArticles = useCallback(async () => {
-    if (["auth"].includes(selectedMenu)) return; // Ne radi nista ako smo na auth tabu
+    if (["auth", "analytics"].includes(selectedMenu)) return; // Ne radi nista ako smo na auth ili anayltics tabu
     try {
       setLoading(true);
       setError(null);
@@ -148,6 +152,7 @@ function App() {
     setLoading(true);
     setShowInfoBlock(false);
     setSelectedArticle(null);
+
     try {
       let result;
       if (selectedMenu === "home") {
@@ -156,19 +161,20 @@ function App() {
         const category = getCategoryFromMenu(selectedMenu);
         result = await fetchArticlesByTopic(category);
       }
-      try {
-        await loadArticles();
-        const articleCount = extractArticleCount(result.message);
-        if (typeof articleCount === "number" && articleCount > 0) {
-          showSuccessToast(
-            `Successfully fetched ${articleCount} new articles!`
-          );
-        } else {
-          showInfoToast("You're up to date! No new articles found.");
-        }
-      } catch (err) {
-        showErrorToast(`Failed to load articles: ${err.message}`);
+
+      const articleCount = extractArticleCount(result.message);
+
+      if (typeof articleCount === "number" && articleCount > 0) {
+        
+        // Delay za refresh podataka da se povuku novi
+        await new Promise(resolve => setTimeout(resolve, 500)); 
+        await loadArticles(); 
+        setRefreshKey(prev => prev + 1);
+        showSuccessToast(`Successfully fetched ${articleCount} new articles!`);
+      } else {
+        showInfoToast("You're up to date! No new articles found.");
       }
+
     } catch (err) {
       showErrorToast(`Failed to refresh: ${err.message}`);
     } finally {
@@ -234,7 +240,7 @@ function App() {
 
   // Load articles on tab change or when search is cleared
   useEffect(() => {
-    if (selectedMenu === "auth") return; // Ne radi nista ako smo na auth tabu
+    if (selectedMenu === "auth" || selectedMenu === "analytics") return; // Ne radi nista ako smo na auth ili analytics tabu
     if (!searchQuery.trim()) {
       loadArticles();
     }
@@ -323,6 +329,8 @@ function App() {
         selectedMenu={selectedMenu}
         isCollapsed={isSidebarCollapsed}
         setIsCollapsed={setIsSidebarCollapsed}
+        user={user}
+        onLogout={handleLogout}
       />
 
       {/* SCROLLABLE MAIN CONTENT AREA */}
@@ -345,6 +353,10 @@ function App() {
           <div className="auth-page-wrapper">
             <Auth user={user} onLogout={handleLogout} />
           </div>
+        ) : selectedMenu === "analytics" ? (
+          <div className="analytics-page-wrapper">
+            <Analytics />
+          </div>
         ) : (
           <>
             <Search
@@ -366,14 +378,14 @@ function App() {
               selectedMenu !== "general" &&
               !searchQuery.trim() && (
                 <div className="subcategory-chart-wrapper">
-                  <SubcategoryChart topic={selectedMenu} />
+                  <SubcategoryChart key={refreshKey} topic={selectedMenu} />
                 </div>
               )}
 
             {/* Show CategoryChart for home tab */}
             {selectedMenu === "home" && !searchQuery.trim() && (
               <div className="category-chart-wrapper">
-                <CategoryChart />
+                <CategoryChart key={refreshKey} />
               </div>
             )}
 

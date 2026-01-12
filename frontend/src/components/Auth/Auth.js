@@ -1,5 +1,6 @@
 import React from "react";
 import { FcGoogle } from "react-icons/fc";
+import "./Auth.css";
 
 // Dodajemo 'user' i 'onLogout' kao propse
 const Auth = ({ user, onLogout }) => {
@@ -20,8 +21,8 @@ const Auth = ({ user, onLogout }) => {
           </p>
 
           <button className="google-login-btn" onClick={handleGoogleLogin}>
-            <FcGoogle size={20} />
-            <span style={{ paddingTop: '1px' }}>Sign in with Google</span>
+            <FcGoogle size={22} />
+            <span>Sign in with Google</span>
           </button>
         </>
       ) : (

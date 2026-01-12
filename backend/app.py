@@ -1,3 +1,6 @@
+import os
+import random
+from datetime import datetime, timedelta
 from collections_map import collections_map, top_headlines_collection
 from flask import Flask, jsonify, request
 from flask_cors import CORS
@@ -5,11 +8,10 @@ from mongo import clusters_collection
 from news_classifier import train_classifier_for_topic, train_top_headlines_classifier
 from news_fetcher import fetch_articles_by_topic, fetch_top_headlines
 from elastic_search import search_es
-from auth import auth_bp
-import os
 from dotenv import load_dotenv
 from werkzeug.middleware.proxy_fix import ProxyFix
-#from analytics import analytics_bp
+from auth import auth
+from analytics import analytics
 
 load_dotenv()
 
@@ -36,25 +38,9 @@ CORS(app,
      origins=[frontend_url, "http://localhost:3000"]
 )
 
-# DODAJ OVO odmah nakon CORS postavki, PRIJE app.register_blueprint
-
-@app.route("/auth/callback")
-def direct_auth_callback():
-    """Direct route for Google OAuth callback"""
-    print("🔥 DIRECT /auth/callback route hit!")
-    print(f"🔥 Request URL: {request.url}")
-    
-    try:
-        # Redirect to the blueprint's callback function
-        return auth_bp.blueprint.callback()
-    except Exception as e:
-        print(f"🔥 Error in direct_auth_callback: {e}")
-        # Fallback: redirect to frontend
-        frontend_url = os.getenv("FRONTEND_URL", "https://news-analyzer-pi.vercel.app")
-        return redirect(frontend_url)
-
-app.register_blueprint(auth_bp, url_prefix="/auth")
-#app.register_blueprint(analytics_bp)
+# Registracija Blueprintova
+app.register_blueprint(auth)
+app.register_blueprint(analytics)
 
 # Dohvacanje top headlinesa s API
 @app.route("/fetch-top-headlines", methods=["POST"])
@@ -265,6 +251,26 @@ def articles_by_category():
     all_articles = all_articles[:100]
 
     return jsonify(all_articles)
+
+
+@app.route("/generate-mock-data")
+def generate_mock_data():
+    events_collection = clusters_collection["user_events"] # Nova kolekcija u tvojoj bazi
+    pages = ["home", "search", "article_view", "login_page", "auth_callback"]
+    devices = ["mobile", "desktop", "tablet"]
+    
+    mock_data = []
+    for i in range(500): # Generiramo 500 akcija
+        user_id = f"user_{random.randint(1, 20)}"
+        mock_data.append({
+            "user_id": user_id,
+            "page": random.choice(pages),
+            "device": random.choice(devices),
+            "timestamp": datetime.now() - timedelta(days=random.randint(0, 7))
+        })
+    
+    events_collection.insert_many(mock_data)
+    return jsonify({"message": "Generirano 500 simuliranih evenata za analizu!"})
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=int(os.getenv("PORT", 5000)))

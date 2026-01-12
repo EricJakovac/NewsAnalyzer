@@ -38,7 +38,7 @@ def fetch_articles_by_topic(topic):
 
         if topic.lower() != "general":
             # Predikcija subkategorije pomoću istreniranog modela samo ako nije 'general'
-            text = article.get("title", "") + " " + (article.get("description") or "")
+            text = (article.get("title") or "") + " " + (article.get("description") or "")
             try:
                 article["subcategory"] = predict_article_label(text, topic.lower())
             except Exception as e:
