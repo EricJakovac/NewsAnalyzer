@@ -181,6 +181,22 @@ function App() {
     }
   }, [selectedMenu, getCategoryFromMenu, loadArticles]);
 
+  const trackPageView = async (menuName) => {
+    try {
+      await fetch(`${process.env.REACT_APP_API_URL}/analytics/track`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          page: menuName, // npr. "business", "sports", "home"
+          device: window.innerWidth < 768 ? "mobile" : "desktop",
+          timestamp: new Date().toISOString(),
+        }),
+      });
+    } catch (err) {
+      console.error("Greška pri slanju analitike:", err);
+    }
+  };
+
   // Search handler
   const handleSearch = useCallback(async () => {
     if (!searchQuery.trim()) {
@@ -262,28 +278,30 @@ function App() {
     const params = new URLSearchParams(window.location.search);
     const authSuccess = params.get("auth");
 
-    if (authSuccess === "success") {
-      const fetchUser = async () => {
-        try {
-          const res = await fetch(`${process.env.REACT_APP_API_URL}/auth/me`, {
-            credentials: "include",
-          });
+    const checkUser = async () => {
+      try {
+        const res = await fetch(`${process.env.REACT_APP_API_URL}/auth/me`, {
+          credentials: "include", // Ključno: šalje session cookie backendu
+        });
 
-          if (res.ok) {
-            const userData = await res.json();
-            setUser(userData);
+        if (res.ok) {
+          const userData = await res.json();
+          setUser(userData);
+          // Ako je u URL-u bio success, postavi menu na home
+          if (authSuccess === "success") {
             setSelectedMenu("home");
           }
-        } catch (e) {
-          console.error(e);
-        } finally {
-          // očisti URL
+        }
+      } catch (e) {
+        console.error("Sesija nije pronađena:", e);
+      } finally {
+        if (authSuccess === "success") {
           window.history.replaceState({}, document.title, "/");
         }
-      };
+      }
+    };
 
-      fetchUser();
-    }
+    checkUser();
   }, []);
 
   const handleSearchInput = async (e) => {
@@ -301,6 +319,7 @@ function App() {
     setShowInfoBlock(false);
     setSelectedArticle(null);
     setSelectedMenu(menu);
+    trackPageView(menu);
 
     if (menu === "auth") return;
 

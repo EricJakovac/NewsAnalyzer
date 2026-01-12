@@ -54,6 +54,8 @@ def callback():
     # 4. Dohvati Google user info
     service = build('oauth2', 'v2', credentials=credentials)
     user_info = service.userinfo().get().execute()
+
+    session.permanent = True
     
     # 5. Spremi usera u session
     session["user"] = {
@@ -71,6 +73,8 @@ def callback():
         "client_secret": credentials.client_secret,
         "scopes": credentials.scopes
     }
+
+    session.modified = True
 
     # 6. Redirect natrag na frontend
     frontend_url = os.getenv("FRONTEND_URL","https://news-analyzer-pi.vercel.app")

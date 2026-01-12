@@ -255,22 +255,40 @@ def articles_by_category():
 
 @app.route("/generate-mock-data")
 def generate_mock_data():
-    events_collection = clusters_collection["user_events"] # Nova kolekcija u tvojoj bazi
-    pages = ["home", "search", "article_view", "login_page", "auth_callback"]
+    events_collection = clusters_collection["user_events"]
+    pages = [
+        "home", "general", "business", "entertainment", 
+        "health", "science", "sports", "technology", 
+        "analytics", "auth"
+    ]
     devices = ["mobile", "desktop", "tablet"]
     
+    events_collection.delete_many({}) 
+    
     mock_data = []
-    for i in range(500): # Generiramo 500 akcija
-        user_id = f"user_{random.randint(1, 20)}"
+    for i in range(500):
+        page = random.choices(
+            pages, 
+            weights=[30, 15, 10, 10, 5, 5, 15, 5, 3, 2], 
+            k=1
+        )[0]
+        
+        user_id = f"user_{random.randint(1, 50)}"
         mock_data.append({
             "user_id": user_id,
-            "page": random.choice(pages),
+            "page": page,
             "device": random.choice(devices),
-            "timestamp": datetime.now() - timedelta(days=random.randint(0, 7))
+            "timestamp": datetime.now() - timedelta(
+                days=random.randint(0, 30), 
+                hours=random.randint(0, 23)
+            )
         })
     
     events_collection.insert_many(mock_data)
-    return jsonify({"message": "Generirano 500 simuliranih evenata za analizu!"})
+    return jsonify({
+        "message": "Uspješno generirano 500 evenata!",
+        "napomena": "Sada će se u Path Analizi vidjeti stvarne kategorije vijesti."
+    })
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=int(os.getenv("PORT", 5000)))
