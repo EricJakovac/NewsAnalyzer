@@ -74,7 +74,7 @@ def callback():
 
     # 6. Redirect natrag na frontend
     frontend_url = os.getenv("FRONTEND_URL","https://news-analyzer-pi.vercel.app")
-    return redirect(frontend_url)
+    return redirect(f"{frontend_url}?auth=success")
 
 
 @auth.route("/auth/me")

@@ -165,16 +165,14 @@ function App() {
       const articleCount = extractArticleCount(result.message);
 
       if (typeof articleCount === "number" && articleCount > 0) {
-        
         // Delay za refresh podataka da se povuku novi
-        await new Promise(resolve => setTimeout(resolve, 500)); 
-        await loadArticles(); 
-        setRefreshKey(prev => prev + 1);
+        await new Promise((resolve) => setTimeout(resolve, 500));
+        await loadArticles();
+        setRefreshKey((prev) => prev + 1);
         showSuccessToast(`Successfully fetched ${articleCount} new articles!`);
       } else {
         showInfoToast("You're up to date! No new articles found.");
       }
-
     } catch (err) {
       showErrorToast(`Failed to refresh: ${err.message}`);
     } finally {
@@ -260,6 +258,34 @@ function App() {
     }
   };
 
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const authSuccess = params.get("auth");
+
+    if (authSuccess === "success") {
+      const fetchUser = async () => {
+        try {
+          const res = await fetch(`${process.env.REACT_APP_API_URL}/auth/me`, {
+            credentials: "include",
+          });
+
+          if (res.ok) {
+            const userData = await res.json();
+            setUser(userData);
+            setSelectedMenu("home");
+          }
+        } catch (e) {
+          console.error(e);
+        } finally {
+          // očisti URL
+          window.history.replaceState({}, document.title, "/");
+        }
+      };
+
+      fetchUser();
+    }
+  }, []);
+
   const handleSearchInput = async (e) => {
     const value = e.target.value;
     setSearchQuery(value);
@@ -292,35 +318,6 @@ function App() {
     setUser(null);
     setSelectedMenu("home");
   };
-
-  useEffect(() => {
-    const fetchUser = async () => {
-      try {
-        // Ovdje je ključno: credentials mora biti dio objekta s opcijama
-        const response = await fetch(
-          `${process.env.REACT_APP_API_URL}/auth/me`,
-          {
-            method: "GET", // Dobra praksa je definirati metodu
-            credentials: "include", // OVO omogućuje slanje cookies-a backendu
-            headers: {
-              "Content-Type": "application/json",
-            },
-          }
-        );
-
-        if (response.ok) {
-          const userData = await response.json();
-          setUser(userData);
-        } else {
-          console.log("Korisnik nije ulogiran (401)");
-        }
-      } catch (error) {
-        console.error("Greška pri dohvaćanju korisnika:", error);
-      }
-    };
-
-    fetchUser();
-  }, []);
 
   return (
     <div className="App">
