@@ -25,9 +25,11 @@ app.secret_key = os.getenv("FLASK_SECRET_KEY")
 # 2. KONFIGURACIJA SESIJE ZA PRODUKCIJU
 # Ovo omogućuje da kolačić "preživi" put s Rendera na Vercel
 app.config.update(
-    SESSION_COOKIE_SECURE=True,     # Samo preko HTTPS
-    SESSION_COOKIE_HTTPONLY=True,   # Štiti od JS napada
-    SESSION_COOKIE_SAMESITE='None', # Dozvoljava cross-site (Vercel -> Render)
+    SESSION_COOKIE_SECURE=True,      # Samo preko HTTPS
+    SESSION_COOKIE_HTTPONLY=True,    # Štiti od JS napada
+    SESSION_COOKIE_SAMESITE='None',  # Dozvoljava cross-site (Vercel -> Render)
+    SESSION_COOKIE_DOMAIN=None,      # Postavi samo na trenutnoj domeni (za localhost) ili nema
+    PERMANENT_SESSION_LIFETIME=timedelta(days=7),  # 7 dana trajanja sesije
 )
 
 frontend_url = os.getenv("FRONTEND_URL", "http://localhost:3000").rstrip('/')

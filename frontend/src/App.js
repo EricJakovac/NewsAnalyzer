@@ -277,6 +277,19 @@ function App() {
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const authSuccess = params.get("auth");
+    const userDataB64 = params.get("user");
+
+    // Ako je user data proslijeđen kao base64 u URL (fallback iz /auth/callback)
+    if (userDataB64) {
+      try {
+        const userDataJson = atob(userDataB64);
+        const userData = JSON.parse(userDataJson);
+        setUser(userData);
+        console.log("User data from URL:", userData);
+      } catch (e) {
+        console.error("Failed to parse user data from URL:", e);
+      }
+    }
 
     const checkUser = async () => {
       try {
@@ -287,13 +300,14 @@ function App() {
         if (res.ok) {
           const userData = await res.json();
           setUser(userData);
+          console.log("User retrieved from session:", userData);
           // Ako je u URL-u bio success, postavi menu na home
           if (authSuccess === "success") {
             setSelectedMenu("home");
           }
         }
       } catch (e) {
-        console.error("Sesija nije pronađena:", e);
+        console.error("Error checking session:", e);
       } finally {
         if (authSuccess === "success") {
           window.history.replaceState({}, document.title, "/");
