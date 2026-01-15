@@ -17,14 +17,6 @@
   font-weight: 600;
 }
 
-/* No-data */
-.subcategory-chart__no-data {
-  text-align: center;
-  color: var(--secondary-text-color);
-  padding: 40px;
-  font-size: 1.1rem;
-}
-
 /* FILTER BADGE – isti stil kao CategoryChart */
 .subcategory-chart__filter-container {
   margin-top: 10px;

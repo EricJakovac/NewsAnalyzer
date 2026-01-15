@@ -22,9 +22,8 @@
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
     text-align: center;
     transition: transform 0.2s ease;
-    /* DODAJ OVO: Osigurava da padding ne "napuhuje" karticu preko 100% širine */
     box-sizing: border-box; 
-    min-width: 0; /* Omogućuje gridu da smanji karticu ako treba */
+    min-width: 0;
 }
 
 .metric-card:hover {

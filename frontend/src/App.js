@@ -18,6 +18,7 @@ import Cards from "./components/Cards/Cards";
 import Auth from "./components/Auth/Auth";
 import Analytics from "./components/Analytics/Analytics";
 import Recommendation from "./components/Recommendation/Recommendation";
+import GeneralArticles from "./components/Charts/GeneralArticles";
 
 function App() {
   const isMobile = window.innerWidth < 768;
@@ -546,11 +547,15 @@ function App() {
                             {getCategoryDisplayName(selectedMenu).toLowerCase()}
                           </p>
                         </div>
-                        <Table
-                          data={articles}
-                          onRowClick={handleRowClick}
-                          showAdditionalButtons={!showInfoBlock}
-                        />
+                        {isMobile ? (
+                          <Cards data={articles} onRowClick={handleRowClick} />
+                        ) : (
+                          <Table
+                            data={articles}
+                            onRowClick={handleRowClick}
+                            showAdditionalButtons={!showInfoBlock}
+                          />
+                        )}
                       </>
                     )}
                   </div>
@@ -579,65 +584,32 @@ function App() {
                           in top headlines
                         </p>
                       </div>
-                      <Table
-                        data={articles}
-                        onRowClick={handleRowClick}
-                        showAdditionalButtons={!showInfoBlock}
-                      />
+                      {/* POPRAVLJENO: Dodana provjera za mobilni prikaz kod pretrage na Home tabu */}
+                      {isMobile ? (
+                        <Cards data={articles} onRowClick={handleRowClick} />
+                      ) : (
+                        <Table
+                          data={articles}
+                          onRowClick={handleRowClick}
+                          showAdditionalButtons={!showInfoBlock}
+                        />
+                      )}
                     </>
                   )}
                 </div>
               )}
+              
+              {/* General Articles*/}
               {selectedMenu === "general" && (
-                <div
-                  className={`table-container${
-                    showInfoBlock ? " table-shrink" : ""
-                  }`}
-                >
-                  {loading ? (
-                    <div className="loading">
-                      <p>
-                        Loading{" "}
-                        {getCategoryDisplayName(selectedMenu).toLowerCase()}{" "}
-                        articles...
-                      </p>
-                    </div>
-                  ) : error ? (
-                    <div className="error">
-                      <p>Can't load data. Please refresh again.</p>
-                    </div>
-                  ) : articles.length === 0 ? (
-                    <div className="no-results">
-                      <p>
-                        {searchQuery.trim()
-                          ? `No articles found for "${searchQuery}" in ${getCategoryDisplayName(
-                              selectedMenu
-                            ).toLowerCase()}.`
-                          : `No ${getCategoryDisplayName(
-                              selectedMenu
-                            ).toLowerCase()} articles found.`}
-                      </p>
-                    </div>
-                  ) : (
-                    <>
-                      {searchQuery.trim() && (
-                        <div className="search-results-info">
-                          <p>
-                            Found {articles.length} article
-                            {articles.length !== 1 ? "s" : ""} for "
-                            {searchQuery}" in{" "}
-                            {getCategoryDisplayName(selectedMenu).toLowerCase()}
-                          </p>
-                        </div>
-                      )}
-                      {isMobile ? (
-                        <Cards data={articles} onRowClick={handleRowClick} />
-                      ) : (
-                        <Table data={articles} onRowClick={handleRowClick} />
-                      )}
-                    </>
-                  )}
-                </div>
+                <GeneralArticles
+                  loading={loading}
+                  error={error}
+                  articles={articles}
+                  searchQuery={searchQuery}
+                  isMobile={isMobile}
+                  handleRowClick={handleRowClick}
+                  showInfoBlock={showInfoBlock}
+                />
               )}
 
               {/* Info block remains visible if needed */}

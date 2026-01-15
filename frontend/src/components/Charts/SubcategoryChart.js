@@ -225,8 +225,8 @@ const SubcategoryChart = ({ topic }) => {
 
   if (data.length === 0) {
     return (
-      <p className="subcategory-chart__no-data">
-        No subcategory data available.
+      <p className="loading">
+        Loading subcategory data...
       </p>
     );
   }

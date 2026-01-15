@@ -229,7 +229,7 @@ const CategoryChart = () => {
 
   if (data.length === 0) {
     return (
-      <p className="category-chart__no-data">No category data available.</p>
+      <p className="loading">Loading category data...</p>
     );
   }
 

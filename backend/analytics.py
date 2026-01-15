@@ -116,27 +116,36 @@ def get_path_analysis():
 
 @analytics.route("/analytics/retention", methods=["GET"])
 def get_retention():
-    events_collection = clusters_collection["user_events"]
-    
-    # Primjer: Tražimo korisnike koji su bili aktivni prije 2 dana i jučer
-    # Day 0 (Prvi posjet), Day 1 (Povratak)
-    day_0_users = set(events_collection.distinct("user_id", {
-        "timestamp": {"$gte": datetime.now() - timedelta(days=2), 
-                      "$lt": datetime.now() - timedelta(days=1)}
-    }))
-    
-    day_1_users = set(events_collection.distinct("user_id", {
-        "timestamp": {"$gte": datetime.now() - timedelta(days=1)}
-    }))
-    
-    # Izračun postotka (Točka 8.2)
-    returning = day_0_users.intersection(day_1_users)
-    retention_rate = (len(returning) / len(day_0_users) * 100) if day_0_users else 0
-    
-    return jsonify({
-        "day_1_retention": f"{round(retention_rate, 2)}%",
-        "interpretation": "Nizak Day 1 retention ukazuje na potrebu za boljim onboardingom."
-    })
+    try:
+        events_collection = clusters_collection["user_events"]
+        
+        # Day 0 (Korisnici aktivni prije 2-3 dana)
+        day_0_users = set(events_collection.distinct("user_id", {
+            "timestamp": {"$gte": datetime.now() - timedelta(days=2), 
+                          "$lt": datetime.now() - timedelta(days=1)}
+        }))
+        
+        # Day 1 (Korisnici aktivni u zadnja 24h)
+        day_1_users = set(events_collection.distinct("user_id", {
+            "timestamp": {"$gte": datetime.now() - timedelta(days=1)}
+        }))
+        
+        returning = day_0_users.intersection(day_1_users)
+        retention_rate = (len(returning) / len(day_0_users) * 100) if day_0_users else 0
+        
+        # Ako MongoDB nema podataka (novi projekt), možemo vratiti poruku
+        if not day_0_users:
+            return jsonify({
+                "day_1_retention": "Prikupljanje podataka...",
+                "interpretation": "Potrebno je više dana aktivnosti za izračun retencije."
+            })
+
+        return jsonify({
+            "day_1_retention": f"{round(retention_rate, 2)}%",
+            "interpretation": "Postotak korisnika koji su se vratili u aplikaciju nakon prvog dana."
+        })
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 @analytics.route("/analytics/combined-dashboard", methods=["GET"])
 def get_combined_dashboard():
@@ -205,43 +214,57 @@ def get_combined_dashboard():
 
 @analytics.route("/analytics/funnel")
 def get_funnel():
-    try:
-        events_collection = clusters_collection["user_events"]
-        
-        steps = [
-            {"name": "Home", "page": "home"},
-            {"name": "General", "page": "general"},
-            {"name": "Business", "page": "business"},
-            {"name": "Entertainment", "page": "entertainment"},
-            {"name": "Health", "page": "health"},
-            {"name": "Science", "page": "science"},
-            {"name": "Sports", "page": "sports"},
-            {"name": "Technology", "page": "technology"},
-            {"name": "Analytics", "page": "analytics"}, 
-        ]
-        
-        funnel_results = []
-        
-        for step in steps:
-            count = events_collection.count_documents({"page": step["page"]})
-            funnel_results.append({
-                "step": step["name"],
-                "value": count
-            })
+    client = get_ga_client()
+    funnel_results = []
+    
+    steps = [
+        {"name": "Home", "page": "/"},
+        {"name": "General", "page": "/general"},
+        {"name": "Business", "page": "/business"},
+        {"name": "Technology", "page": "/technology"},
+        {"name": "Science", "page": "/science"},
+        {"name": "Health", "page": "/health"},
+        {"name": "Sports", "page": "/sports"},
+        {"name": "Entertainment", "page": "/entertainment"}
+    ]
 
-        if all(item['value'] == 0 for item in funnel_results):
-            return jsonify([
-                {"step": "Home", "value": 0},
-                {"step": "General", "value": 0},
-                {"step": "Auth", "value": 0}
-            ])
+    # POKUŠAJ 1: Google Analytics 4
+    if client:
+        try:
+            request_data = RunReportRequest(
+                property=f"properties/{os.getenv('GA_PROPERTY_ID')}",
+                dimensions=[Dimension(name="pagePath")],
+                metrics=[Metric(name="activeUsers")],
+                date_ranges=[DateRange(start_date="30daysAgo", end_date="today")],
+            )
+            response = client.run_report(request=request_data)
+            
+            ga_data = {row.dimension_values[0].value: int(row.metric_values[0].value) for row in response.rows}
+            
+            if ga_data:
+                for step in steps:
+                    funnel_results.append({
+                        "step": step["name"],
+                        "value": ga_data.get(step["page"], 0)
+                    })
+                print("[FUNNEL] Using Real GA Data")
+                return jsonify(funnel_results)
+        except Exception as e:
+            print(f"[FUNNEL] GA Error: {e}")
 
-        return jsonify(funnel_results)
-        
-    except Exception as e:
-        print(f"Greška u funnelu: {e}")
-        return jsonify([])
-
+    # POKUŠAJ 2: FALLBACK na MongoDB
+    print("[FUNNEL] Falling back to MongoDB")
+    events_collection = clusters_collection["user_events"]
+    funnel_results = []
+    for step in steps:
+        mongo_page = step["page"].replace("/", "") if step["page"] != "/" else "home"
+        count = events_collection.count_documents({"page": mongo_page})
+        funnel_results.append({
+            "step": step["name"],
+            "value": count
+        })
+    
+    return jsonify(funnel_results)
 @analytics.route("/analytics/track", methods=["POST"])
 def track_event():
     data = request.json

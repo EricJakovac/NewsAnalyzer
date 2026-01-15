@@ -99,12 +99,21 @@
   background: var(--button-hover-bg-color);
 }
 
+/* Unificirani stil za Loading i No-Data poruke */
 .loading,
-.error,
+.no-data,
 .no-results {
   text-align: center;
-  padding: 40px;
-  font-size: 1.1rem;
+  padding: 100px 20px; 
+  font-size: 1.2rem;
+  color: #777; 
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 300px;
 }
 
 .error {
@@ -112,10 +121,6 @@
   background: #f8d7da;
   border: 1px solid #f5c6cb;
   border-radius: 6px;
-}
-
-.loading {
-  color: var(--text-color);
 }
 
 /*Samo za Auth stranicu*/
@@ -154,14 +159,23 @@
   justify-content: center;
   height: 44px;
   width: 44px;
+  min-width: 44px; /* Osigurava da se ne skupi u flex kontejneru */
+  padding: 0;      /* Ključno za mobilne uređaje */
   border: none;
   background: var(--button-bg-color);
   color: #23272b;
   border-radius: 6px;
   cursor: pointer;
-  transition: background 0.2s;
-  margin-left: 4px;
-  font-size: 1.3rem;
+  font-size: 1.5rem; /* Povećaj malo ako je ikona premala */
+  line-height: 1;    /* Sprječava čudne pomake teksta/ikone */
+  appearance: none;  /* Uklanja defaultne iOS stilove */
+  -webkit-appearance: none;
+}
+
+/* Povećaj samu ikonu unutar gumba ako koristiš SVG */
+.refresh-btn svg {
+  width: 24px;
+  height: 24px;
 }
 
 .refresh-btn:hover {

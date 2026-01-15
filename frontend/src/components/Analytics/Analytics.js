@@ -25,7 +25,19 @@ const Analytics = () => {
   const [funnelData, setFunnelData] = useState([]);
   const [retention, setRetention] = useState(null);
   const [loading, setLoading] = useState(true);
-  const COLORS = ["#0088FE", "#00C49F", "#FFBB28", "#FF8042", "#8884d8"];
+  const COLORS = [
+    "#0088FE", // Original Plava
+    "#00C49F", // Original Zelena
+    "#FFBB28", // Original Žuta
+    "#FF8042", // Original Narančasta
+    "#8884d8", // Original Ljubičasta
+    "#FF6666", // Svijetlo crvena/roza
+    "#00ACC1", // Tamnija tirkizna
+    "#4DB6AC", // Morski zelena
+    "#F06292", // Magenta/Roza
+    "#A1887F", // Topla smeđa/siva
+    "#4FC3F7", // Nebesko plava
+  ];
   const API_BASE_URL = process.env.REACT_APP_API_URL || "http://localhost:5000";
 
   // Pratimo širinu ekrana za dinamičku prilagodbu grafikona
@@ -103,7 +115,7 @@ const Analytics = () => {
         className="analytics-container"
         style={{ textAlign: "center", paddingTop: "100px" }}
       >
-        <h3>Učitavanje analitičkih podataka...</h3>
+        <p className="loading">Loading analytics data...</p>
       </div>
     );
   }

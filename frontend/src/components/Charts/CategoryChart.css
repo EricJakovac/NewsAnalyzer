@@ -28,13 +28,6 @@
   margin: 20px 0;
 }
 
-.category-chart__no-data {
-  text-align: center;
-  color: var(--secondary-text-color);
-  padding: 40px;
-  font-size: 1.1rem;
-}
-
 /* FILTER BADGE – kopija iz SubcategoryChart */
 .category-chart__filter-container {
   margin-top: 10px;
