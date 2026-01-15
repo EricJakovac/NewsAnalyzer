@@ -13,6 +13,12 @@ import {
 } from "recharts";
 import "./Analytics.css";
 
+// Funkcija za formatiranje imena stranica
+const formatPageName = (name) => {
+  if (!name || name === "home") return "Home";
+  return name.charAt(0).toUpperCase() + name.slice(1);
+};
+
 const Analytics = () => {
   const [gaData, setGaData] = useState([]);
   const [funnelData, setFunnelData] = useState([]);
@@ -38,7 +44,14 @@ const Analytics = () => {
           }
         );
         const dataFull = await resFull.json();
-        setGaData(Array.isArray(dataFull) ? dataFull : []);
+        const formattedGaData = Array.isArray(dataFull)
+          ? dataFull.map((item) => ({
+              ...item,
+              displayName: formatPageName(item.page), 
+            }))
+          : [];
+
+        setGaData(formattedGaData);
 
         const resFunnel = await fetch(`${API_BASE_URL}/analytics/funnel`);
         const dataFunnel = await resFunnel.json();
@@ -68,7 +81,7 @@ const Analytics = () => {
         className="analytics-container"
         style={{ textAlign: "center", paddingTop: "100px" }}
       >
-        <h2>Učitavanje analitičkih podataka...</h2>
+        <h3>Učitavanje analitičkih podataka...</h3>
       </div>
     );
   }
@@ -100,7 +113,7 @@ const Analytics = () => {
                   <Pie
                     data={gaData}
                     dataKey="users"
-                    nameKey="page"
+                    nameKey="displayName"
                     cx="50%"
                     cy="50%"
                     outerRadius={isMobile ? "80%" : "90%"}
@@ -179,15 +192,12 @@ const Analytics = () => {
               {gaData.length > 0 ? (
                 gaData.map((row, i) => (
                   <tr key={i}>
-                    <td
-                      style={{
-                        fontWeight: "600",
-                        color: "#1e293b",
-                        textTransform: "capitalize",
-                      }}
-                    >
-                      {/* Popravljeno: koristimo 'Početna' jer je tako šalje backend */}
-                      {row.page === "Početna" ? "/" : `/${row.page}`}
+                    <td style={{ fontWeight: "600", color: "#1e293b" }}>
+                      {row.page === "home" || row.page === "/"
+                        ? "/ (Home)"
+                        : `/${
+                            row.page.charAt(0).toUpperCase() + row.page.slice(1)
+                          }`}
                     </td>
                     <td>{row.users}</td>
                     <td>

@@ -17,6 +17,7 @@ import CategoryChart from "./components/Charts/CategoryChart";
 import Cards from "./components/Cards/Cards";
 import Auth from "./components/Auth/Auth";
 import Analytics from "./components/Analytics/Analytics";
+import Recommendation from "./components/Recommendation/Recommendation";
 
 function App() {
   const isMobile = window.innerWidth < 768;
@@ -182,12 +183,16 @@ function App() {
   }, [selectedMenu, getCategoryFromMenu, loadArticles]);
 
   const trackPageView = async (menuName) => {
+    if (!user || (!user.id && !user.sub)) return;
+
     try {
       await fetch(`${process.env.REACT_APP_API_URL}/analytics/track`, {
         method: "POST",
+        credentials: "include",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          page: menuName, // npr. "business", "sports", "home"
+          user_id: user.id || user.sub,
+          page: menuName,
           device: window.innerWidth < 768 ? "mobile" : "desktop",
           timestamp: new Date().toISOString(),
         }),
@@ -277,15 +282,12 @@ function App() {
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const authSuccess = params.get("auth");
-    const userDataB64 = params.get("user");
+    const userDataB64 = params.get("user"); // 1. Brzi prikaz iz URL-a (da korisnik ne čeka fetch)
 
-    // Ako je user data proslijeđen kao base64 u URL (fallback iz /auth/callback)
     if (userDataB64) {
       try {
-        const userDataJson = atob(userDataB64);
-        const userData = JSON.parse(userDataJson);
+        const userData = JSON.parse(atob(userDataB64));
         setUser(userData);
-        console.log("User data from URL:", userData);
       } catch (e) {
         console.error("Failed to parse user data from URL:", e);
       }
@@ -294,20 +296,29 @@ function App() {
     const checkUser = async () => {
       try {
         const res = await fetch(`${process.env.REACT_APP_API_URL}/auth/me`, {
-          credentials: "include", // Ključno: šalje session cookie backendu
+          credentials: "include",
         });
 
         if (res.ok) {
           const userData = await res.json();
-          setUser(userData);
-          console.log("User retrieved from session:", userData);
-          // Ako je u URL-u bio success, postavi menu na home
+          console.log(
+            "Stvarni podaci korisnika iz Google-a:",
+            userData || userData.sub
+          );
+          setUser(userData); // Potvrđujemo da je sesija i dalje aktivna
           if (authSuccess === "success") {
             setSelectedMenu("home");
+          }
+        } else {
+          setUser(null);
+          // Ako server kaže da nema sesije, očisti URL da se ne bi uloopao
+          if (window.location.search.includes("user=")) {
+            window.history.replaceState({}, document.title, "/");
           }
         }
       } catch (e) {
         console.error("Error checking session:", e);
+        // Ne stavljaj setUser(null) ovdje ako želiš tolerirati privremeni pad mreže
       } finally {
         if (authSuccess === "success") {
           window.history.replaceState({}, document.title, "/");
@@ -332,7 +343,6 @@ function App() {
     setSearchQuery("");
     setShowInfoBlock(false);
     setSelectedArticle(null);
-    setSelectedMenu(menu);
     trackPageView(menu);
 
     if (menu === "auth") return;
@@ -347,9 +357,9 @@ function App() {
 
   // Funkcija za logout
   const handleLogout = () => {
-    window.location.href = `${process.env.REACT_APP_API_URL}/auth/logout`;
     setUser(null);
     setSelectedMenu("home");
+    window.location.href = `${process.env.REACT_APP_API_URL}/auth/logout`;
   };
 
   return (
@@ -389,6 +399,12 @@ function App() {
           </div>
         ) : (
           <>
+            {/* NOVI BLOK ZA PREPORUKE */}
+            {selectedMenu === "home" && user && (user.id || user.sub) && (
+              <div className="recommendation-container-wrapper">
+                <Recommendation />
+              </div>
+            )}
             <Search
               value={searchQuery}
               onInputChange={onInputChange}
@@ -574,9 +590,7 @@ function App() {
                             setShowInfoBlock(false);
                             setSelectedArticle(null);
                           }}
-                        >
-                          ×
-                        </button>
+                        ></button>
                       </div>
                       <div className="info-block-content">
                         <div className="article-field">

@@ -1,7 +1,7 @@
 import os
 import json
 import base64
-from flask import Blueprint, redirect, request, session, url_for, jsonify
+from flask import Blueprint, redirect, request, session, url_for, jsonify, current_app
 from google_auth_oauthlib.flow import Flow
 from googleapiclient.discovery import build
 
@@ -64,18 +64,18 @@ def callback():
     print(f"User info from Google: {user_info.get('email')}")
 
     session.permanent = True
-    session.cookie_secure = True
-    session.cookie_httponly = True
-    session.cookie_samesite = 'None'
     
     # 5. Spremi usera u session
     user_data = {
         "name": user_info.get("name"),
         "picture": user_info.get("picture"),
-        "email": user_info.get("email")
+        "email": user_info.get("email"),
+        "id": user_info.get("id") or user_info.get("sub"),
+        "sub": user_info.get("sub") or user_info.get("id")
     }
     
-    session["user"] = user_data
+    session["user_id"] = user_data.get("id") or user_data.get("email")
+    session["user"] = user_data  # ← DODAJ OVU LINIJU
 
     # Spremamo credentials za Analytics API 
     session["credentials"] = {
@@ -116,9 +116,28 @@ def get_me():
 
 @auth.route("/auth/logout")
 def logout():
+    # Clear server-side session
     session.clear()
-    frontend_url = os.getenv("FRONTEND_URL", "https://news-analyzer-pi.vercel.app")
-    return redirect(frontend_url)
+    session.modified = True
+
+    frontend_url = os.getenv("FRONTEND_URL", "https://news-analyzer-pi.vercel.app").rstrip('/')
+
+    # Build redirect response to frontend home page and explicitly clear the session cookie on it
+    response = redirect(f"{frontend_url}/")
+    cookie_name = getattr(current_app, "session_cookie_name", "session")
+    # Use app config for secure/samesite flags so local development works
+    secure_flag = current_app.config.get("SESSION_COOKIE_SECURE", False)
+    samesite_flag = current_app.config.get("SESSION_COOKIE_SAMESITE", None)
+    response.set_cookie(
+        cookie_name,
+        "",
+        expires=0,
+        secure=secure_flag,
+        httponly=True,
+        samesite=samesite_flag,
+    )
+
+    return response
 
 @auth.route("/auth/debug-session", methods=["GET"])
 def debug_session():

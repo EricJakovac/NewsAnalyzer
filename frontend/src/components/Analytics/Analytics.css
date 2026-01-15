@@ -67,12 +67,27 @@
 /* Tablica - usklađena s tvojom glavnom tablicom */
 .path-table-container {
     overflow-x: auto;
+    -webkit-overflow-scrolling: touch; 
+    margin: 0 -15px; 
+    padding: 0 15px;
 }
 
 .path-table {
     width: 100%;
-    border-collapse: separate;
-    border-spacing: 0;
+    min-width: 400px;
+    border-collapse: collapse;
+}
+
+@media (max-width: 768px) {
+    .path-table th, 
+    .path-table td {
+        padding: 10px 8px; 
+        font-size: 13px;   
+    }
+    
+    .analytics-section {
+        padding: 15px;
+    }
 }
 
 .path-table th {

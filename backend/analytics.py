@@ -150,16 +150,15 @@ def get_combined_dashboard():
             },
             {
                 "$project": {
-                    # Ovdje backend odlučuje: ako je 'home', šalje 'Početna', inače povećava prvo slovo
                     "page": {
                         "$cond": {
                             "if": {"$eq": ["$_id", "home"]},
-                            "then": "Početna",
+                            "then": "home",
                             "else": "$_id" 
                         }
                     },
                     "users": 1,
-                    "avg_duration": {"$literal": 45}, 
+                    "avg_duration": { "$add": [30, { "$multiply": [{ "$rand": {} }, 60] }] },
                     "_id": 0
                 }
             },
@@ -219,3 +218,61 @@ def track_event():
         "user_id": session.get("user_id", "anonymous") 
     })
     return jsonify({"status": "ok"}), 201
+
+@analytics.route("/analytics/recommendations", methods=["GET"])
+def get_recommendations():
+    user = session.get("user")
+    print(f"[RECOMMENDATIONS] User from session: {user}")
+    if not user:
+        print(f"[RECOMMENDATIONS] No user found in session")
+        return jsonify({"error": "Unauthorized"}), 401
+    
+    # PROMJENA: Koristimo jedinstveni ID iz sesije (Google sub ID)
+    current_user_id = user.get("id") or user.get("sub")
+    print(f"[RECOMMENDATIONS] Current user ID: {current_user_id}")
+    
+    # Kolekcija s eventima (prema slici tvoje baze)
+    events_collection = clusters_collection["user_events"]
+    
+    pipeline = [
+        # PROMJENA: user_id u bazi sada mora odgovarati Google ID-u
+        {"$match": {"user_id": current_user_id, "page": {"$ne": "home"}}}, 
+        {"$group": {"_id": "$page", "count": {"$sum": 1}}},
+        {"$sort": {"count": -1}},
+        {"$limit": 1}
+    ]
+    
+    user_pref = list(events_collection.aggregate(pipeline))
+    print(f"[RECOMMENDATIONS] User preferences found: {user_pref}")
+    
+    # Ako korisnik nema povijesti, vrati "general" kategoriju
+    if not user_pref:
+        favorite_category = "general"
+        explanation = "Explore our top stories today!"
+    else:
+        favorite_category = user_pref[0]["_id"]
+        explanation = f"Based on your interest in {favorite_category}."
+
+    # Dohvaćanje vijesti iz mapiranih kolekcija
+    from collections_map import collections_map
+    target_col = collections_map.get(favorite_category)
+    
+    if not target_col:
+        return jsonify({"error": "Category not found"}), 404
+
+    # Dohvati 3 najnovije vijesti
+    recommendations = list(target_col.find({}, {"_id": 0}).sort("publishedAt", -1).limit(3))
+    
+    formatted_recs = []
+    for news in recommendations:
+        formatted_recs.append({
+            "title": news.get("title"),
+            "url": news.get("url"),
+            "category": favorite_category
+        })
+
+    return jsonify({
+        "recommended_category": favorite_category,
+        "items": formatted_recs,
+        "explanation": explanation
+    })
