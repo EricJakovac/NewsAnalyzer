@@ -1,11 +1,15 @@
 /* Recommendation.css */
+* {
+    box-sizing: border-box;
+}
 
 .recommendation-page-wrapper {
-    padding: 40px 20px;
+    padding: 20px;
     width: 100%;
     max-width: 1200px;
     margin: 0 auto;
-    animation: fadeIn 0.5s ease-in;
+    overflow-x: hidden; 
+    display: block; 
 }
 
 .rec-header {
@@ -117,8 +121,15 @@
     }
 
     .rec-grid {
-        grid-template-columns: 1fr; /* Jedna kartica preko cijele širine */
+        display: flex;
+        flex-direction: column; /* Flexbox je nekad sigurniji od grida na jako malim ekranima */
+        width: 100%;
         gap: 15px;
+    }
+    
+    .rec-card-large {
+        width: 100%;
+        margin: 0; /* Resetiraj margine ako postoje */
     }
 
     .rec-header {

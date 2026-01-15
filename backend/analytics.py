@@ -1,17 +1,41 @@
 import os
+import json
 from flask import Blueprint, session, jsonify, request
 from google.analytics.data_v1beta import BetaAnalyticsDataClient
 from google.analytics.data_v1beta.types import RunReportRequest, DateRange, Dimension, Metric
+from google.oauth2.service_account import Credentials as ServiceAccountCredentials
 from google.oauth2.credentials import Credentials
 from mongo import clusters_collection
 from datetime import datetime, timedelta
+from collections_map import collections_map
 
 analytics = Blueprint("analytics", __name__)
 
 def get_ga_client():
+    """
+    Pokušaj koristiti Service Account kredencijale (produkcija).
+    Ako ne postoje, pokušaj koristiti user session kredencijale (lokalno).
+    """
     try:
+        # Opcija 1: Service Account (produkcija - Render)
+        service_account_json = os.getenv("GOOGLE_SERVICE_ACCOUNT_JSON")
+        if service_account_json:
+            try:
+                service_account_info = json.loads(service_account_json)
+                credentials = ServiceAccountCredentials.from_service_account_info(
+                    service_account_info,
+                    scopes=["https://www.googleapis.com/auth/analytics.readonly"]
+                )
+                print("[GA] Using Service Account credentials")
+                return BetaAnalyticsDataClient(credentials=credentials)
+            except Exception as e:
+                print(f"[GA] Service Account error: {e}")
+                pass  # Padni na sljedeću opciju
+        
+        # Opcija 2: User Session Credentials (lokalno - OAuth)
         creds_data = session.get("credentials")
         if not creds_data:
+            print("[GA] No credentials available (service account or session)")
             return None
 
         credentials = Credentials(
@@ -22,8 +46,10 @@ def get_ga_client():
             client_secret=creds_data.get("client_secret"),
             scopes=creds_data.get("scopes")
         )
+        print("[GA] Using Session credentials")
         return BetaAnalyticsDataClient(credentials=credentials)
-    except Exception:
+    except Exception as e:
+        print(f"[GA] Error creating client: {e}")
         return None
 
 @analytics.route("/analytics/full-report", methods=["GET"])
@@ -260,7 +286,6 @@ def get_recommendations():
         explanation = f"Based on your interest in {favorite_category}."
 
     # Dohvaćanje vijesti iz mapiranih kolekcija
-    from collections_map import collections_map
     target_col = collections_map.get(favorite_category)
     
     if target_col is None:
