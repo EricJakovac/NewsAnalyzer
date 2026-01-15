@@ -284,15 +284,34 @@ function App() {
     const authSuccess = params.get("auth");
     const userDataB64 = params.get("user"); // 1. Brzi prikaz iz URL-a (da korisnik ne čeka fetch)
 
+    // Korak 1: Ako je user data proslijeđen kao base64 u URL (iz /auth/callback)
     if (userDataB64) {
       try {
         const userData = JSON.parse(atob(userDataB64));
         setUser(userData);
+        // Spremi u localStorage za buduće refresh-e
+        localStorage.setItem("user", JSON.stringify(userData));
+        console.log("User data from URL decoded and saved to localStorage:", userData);
       } catch (e) {
         console.error("Failed to parse user data from URL:", e);
       }
+    } 
+    // Korak 2: Ako nema URL data, provjeri localStorage (nakon refresh-a)
+    else {
+      const storedUser = localStorage.getItem("user");
+      if (storedUser) {
+        try {
+          const userData = JSON.parse(storedUser);
+          setUser(userData);
+          console.log("User loaded from localStorage:", userData);
+        } catch (e) {
+          console.error("Failed to parse stored user data:", e);
+          localStorage.removeItem("user");
+        }
+      }
     }
 
+    // Korak 3: Fallback - ako nema URL ili localStorage, provjeri session na backendu
     const checkUser = async () => {
       try {
         const res = await fetch(`${process.env.REACT_APP_API_URL}/auth/me`, {
@@ -302,23 +321,25 @@ function App() {
         if (res.ok) {
           const userData = await res.json();
           console.log(
-            "Stvarni podaci korisnika iz Google-a:",
-            userData || userData.sub
+            "User retrieved from session:",
+            userData
           );
-          setUser(userData); // Potvrđujemo da je sesija i dalje aktivna
+          setUser(userData);
+          // Spremi u localStorage kao backup
+          localStorage.setItem("user", JSON.stringify(userData));
           if (authSuccess === "success") {
             setSelectedMenu("home");
           }
         } else {
-          setUser(null);
-          // Ako server kaže da nema sesije, očisti URL da se ne bi uloopao
-          if (window.location.search.includes("user=")) {
-            window.history.replaceState({}, document.title, "/");
+          // Ako nema session i nema URL data, ali je localStorage dostupan - koristi to
+          // (ne postavljaj setUser(null) ako je korisnik već u localStorage)
+          const storedUser = localStorage.getItem("user");
+          if (!storedUser && res.status === 401) {
+            console.log("User not found in session or localStorage");
           }
         }
       } catch (e) {
         console.error("Error checking session:", e);
-        // Ne stavljaj setUser(null) ovdje ako želiš tolerirati privremeni pad mreže
       } finally {
         if (authSuccess === "success") {
           window.history.replaceState({}, document.title, "/");
@@ -357,6 +378,8 @@ function App() {
 
   // Funkcija za logout
   const handleLogout = () => {
+    // Očisti localStorage prije nego što se redirecta
+    localStorage.removeItem("user");
     setUser(null);
     setSelectedMenu("home");
     window.location.href = `${process.env.REACT_APP_API_URL}/auth/logout`;
