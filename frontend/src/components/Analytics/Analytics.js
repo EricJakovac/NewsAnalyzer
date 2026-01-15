@@ -10,6 +10,7 @@ import {
   PieChart,
   Pie,
   Cell,
+  Legend,
 } from "recharts";
 import "./Analytics.css";
 
@@ -45,10 +46,31 @@ const Analytics = () => {
         );
         const dataFull = await resFull.json();
         const formattedGaData = Array.isArray(dataFull)
-          ? dataFull.map((item) => ({
-              ...item,
-              displayName: formatPageName(item.page), 
-            }))
+          ? dataFull.reduce((acc, item) => {
+              // 1. Ovdje koristimo "home" malim slovima za logiku
+              const isHome =
+                item.page === "/" ||
+                item.page === "home" ||
+                item.page === "/home";
+              const name = isHome ? "home" : item.page.replace("/", "");
+
+              const displayName = isHome ? "Home" : formatPageName(name);
+
+              const existing = acc.find((i) => i.displayName === displayName);
+              if (existing) {
+                existing.users += parseInt(item.users);
+                existing.avg_duration =
+                  (existing.avg_duration + item.avg_duration) / 2;
+              } else {
+                acc.push({
+                  ...item,
+                  page: name, // Sprema "home"
+                  displayName: displayName, // Sprema "Home" (za grafikon)
+                  users: parseInt(item.users),
+                });
+              }
+              return acc;
+            }, [])
           : [];
 
         setGaData(formattedGaData);
@@ -127,6 +149,11 @@ const Analytics = () => {
                     ))}
                   </Pie>
                   <Tooltip />
+                  <Legend
+                    layout="horizontal"
+                    verticalAlign="bottom"
+                    align="center"
+                  />
                 </PieChart>
               </ResponsiveContainer>
             ) : (

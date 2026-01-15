@@ -185,6 +185,28 @@ function App() {
   }, [selectedMenu, getCategoryFromMenu, loadArticles]);
 
   const trackPageView = async (menuName) => {
+    // 1. Ručno javljanje Google Analyticsu (GA4) o promjeni virtualne stranice
+    const path = menuName === "home" ? "/" : `/${menuName}`;
+
+    if (window.gtag && process.env.REACT_APP_GA_ID) {
+      // 1. Prvo ažuriramo konfiguraciju (putanju i naslov)
+      window.gtag("config", process.env.REACT_APP_GA_ID, {
+        debug_mode: true,
+        page_path: path,
+        page_title: getCategoryDisplayName(menuName),
+        send_page_view: false, // I dalje ostavljamo false ovdje da config ne pošalje dupli event
+      });
+
+      // 2. OVO NEDOSTAJE: Ručno slanje page_view događaja s novim podacima
+      window.gtag("event", "page_view", {
+        page_path: path,
+        page_title: getCategoryDisplayName(menuName),
+      });
+
+      console.log(`[GA4] Tracked & Sent: ${path}`);
+    }
+
+    // 2. Tvoja postojeća logika za MongoDB (ne mijenjaj je)
     if (!user || (!user.id && !user.sub)) return;
 
     try {
@@ -200,7 +222,7 @@ function App() {
         }),
       });
     } catch (err) {
-      console.error("Greška pri slanju analitike:", err);
+      console.error("Greška pri slanju analitike u MongoDB:", err);
     }
   };
 
@@ -259,14 +281,6 @@ function App() {
     loadArticles();
   };
 
-  // Load articles on tab change or when search is cleared
-  useEffect(() => {
-    if (selectedMenu === "auth" || selectedMenu === "analytics") return; // Ne radi nista ako smo na auth ili analytics tabu
-    if (!searchQuery.trim()) {
-      loadArticles();
-    }
-  }, [loadArticles, searchQuery]);
-
   const handleRowClick = (article) => {
     if (
       selectedArticle &&
@@ -281,6 +295,71 @@ function App() {
     }
   };
 
+  const handleSearchInput = async (e) => {
+    const value = e.target.value;
+    setSearchQuery(value);
+
+    if (selectedMenu === "home" && value.trim() !== "") {
+      await handleSearchTopHeadlines(value);
+    }
+  };
+
+  const handleMenuSelect = (menu) => {
+    setSelectedMenu(menu);
+    setSearchQuery("");
+    setShowInfoBlock(false);
+    setSelectedArticle(null);
+
+    if (menu === "auth") return;
+
+    // Scroll to top of main content
+    if (mainContentRef.current) {
+      mainContentRef.current.scrollTo({ top: 0, behavior: "smooth" });
+    }
+  };
+
+  const [user, setUser] = useState(null);
+
+  // Funkcija za logout
+  const handleLogout = () => {
+    // Očisti localStorage prije nego što se redirecta
+    localStorage.removeItem("user");
+    setUser(null);
+    setSelectedMenu("home");
+    window.location.href = `${process.env.REACT_APP_API_URL}/auth/logout`;
+  };
+
+  // Load articles on tab change or when search is cleared
+  useEffect(() => {
+    if (
+      selectedMenu === "auth" ||
+      selectedMenu === "analytics" ||
+      selectedMenu === "recommendation"
+    )
+      return; // Ne radi nista ako smo na auth ili analytics tabu
+    if (!searchQuery.trim()) {
+      loadArticles();
+    }
+  }, [loadArticles, searchQuery]);
+
+  // Analytics tracking - poziva se pri svakoj promjeni izbornika
+  useEffect(() => {
+    // 1. Google Analytics - prati SVE (uključujući analytics i recommendation)
+    if (selectedMenu && selectedMenu !== "auth") {
+      trackPageView(selectedMenu);
+    }
+
+    // 2. Interni MongoDB Tracking - zadržava tvoja pravila o ignoriranju
+    const ignoredTabsForDB = ["auth", "analytics", "recommendation"];
+    if (selectedMenu && user && !ignoredTabsForDB.includes(selectedMenu)) {
+      console.log(
+        `[DB-TRACKING] User ${user.id || user.sub} visited: ${selectedMenu}`
+      );
+      // Ovdje ide tvoj poziv prema backendu/bazi
+    }
+  }, [selectedMenu, user]); // Dodaj user ovdje da se interni log opali kad se on učita
+
+  // User authentication and session management
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const authSuccess = params.get("auth");
@@ -351,41 +430,6 @@ function App() {
 
     checkUser();
   }, []);
-
-  const handleSearchInput = async (e) => {
-    const value = e.target.value;
-    setSearchQuery(value);
-
-    if (selectedMenu === "home" && value.trim() !== "") {
-      await handleSearchTopHeadlines(value);
-    }
-  };
-
-  const handleMenuSelect = (menu) => {
-    setSelectedMenu(menu);
-    setSearchQuery("");
-    setShowInfoBlock(false);
-    setSelectedArticle(null);
-    trackPageView(menu);
-
-    if (menu === "auth") return;
-
-    // Scroll to top of main content
-    if (mainContentRef.current) {
-      mainContentRef.current.scrollTo({ top: 0, behavior: "smooth" });
-    }
-  };
-
-  const [user, setUser] = useState(null);
-
-  // Funkcija za logout
-  const handleLogout = () => {
-    // Očisti localStorage prije nego što se redirecta
-    localStorage.removeItem("user");
-    setUser(null);
-    setSelectedMenu("home");
-    window.location.href = `${process.env.REACT_APP_API_URL}/auth/logout`;
-  };
 
   return (
     <div className="App">

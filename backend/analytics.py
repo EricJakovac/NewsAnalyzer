@@ -218,7 +218,6 @@ def get_funnel():
             {"name": "Sports", "page": "sports"},
             {"name": "Technology", "page": "technology"},
             {"name": "Analytics", "page": "analytics"}, 
-            {"name": "Auth", "page": "auth"}
         ]
         
         funnel_results = []
@@ -256,42 +255,42 @@ def track_event():
 
 @analytics.route("/analytics/recommendations", methods=["GET"])
 def get_recommendations():
-    # Čitaj user_id iz query parametra umjesto iz sesije
     current_user_id = request.args.get("user_id")
-    print(f"[RECOMMENDATIONS] User ID from query param: {current_user_id}")
     if not current_user_id:
-        print(f"[RECOMMENDATIONS] No user_id provided")
         return jsonify({"error": "Unauthorized"}), 401
     
-    # Kolekcija s eventima (prema slici tvoje baze)
     events_collection = clusters_collection["user_events"]
     
     pipeline = [
-        # PROMJENA: user_id u bazi sada mora odgovarati Google ID-u
-        {"$match": {"user_id": current_user_id, "page": {"$ne": "home"}}}, 
+        {"$match": {
+            "user_id": current_user_id, 
+            "page": {"$nin": ["analytics", "recommendation", "auth"]}
+        }}, 
         {"$group": {"_id": "$page", "count": {"$sum": 1}}},
         {"$sort": {"count": -1}},
         {"$limit": 1}
     ]
     
     user_pref = list(events_collection.aggregate(pipeline))
-    print(f"[RECOMMENDATIONS] User preferences found: {user_pref}")
     
-    # Ako korisnik nema povijesti, vrati "general" kategoriju
     if not user_pref:
-        favorite_category = "general"
+        favorite_category = "top"  # Default
         explanation = "Explore our top stories today!"
     else:
         favorite_category = user_pref[0]["_id"]
-        explanation = f"Based on your interest in {favorite_category}."
+        if favorite_category == "home":
+            explanation = "Based on your interest in top headlines."
+        else:
+            explanation = f"Based on your interest in {favorite_category}."
 
-    # Dohvaćanje vijesti iz mapiranih kolekcija
-    target_col = collections_map.get(favorite_category)
+    search_key = "top" if favorite_category == "home" else favorite_category
+    target_col = collections_map.get(search_key)
     
     if target_col is None:
-        return jsonify({"error": "Category not found"}), 404
+        target_col = collections_map.get("technology")
+        favorite_category = "technology"
 
-    # Dohvati 3 najnovije vijesti
+    # Dohvati vijesti (ostaje isto)
     recommendations = list(target_col.find({}, {"_id": 0}).sort("publishedAt", -1).limit(3))
     
     formatted_recs = []
