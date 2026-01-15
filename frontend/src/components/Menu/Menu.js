@@ -12,6 +12,7 @@ import { IoClose } from "react-icons/io5";
 import { FaSignInAlt } from "react-icons/fa";
 import { FaSignOutAlt } from "react-icons/fa";
 import { IoStatsChart } from "react-icons/io5";
+import { HiSparkles } from "react-icons/hi2";
 import "./Menu.css";
 
 const categoryIcons = {
@@ -140,15 +141,27 @@ function Menu({
         )}
 
         {user && (
-          <li
-            className={`menu-item clickable ${
-              selectedMenu === "analytics" ? "active" : ""
-            }`}
-            onClick={() => onSelectMenu("analytics")}
-          >
-            <IoStatsChart className="menu-icon" size={22} />
-            {!isCollapsed && <span className="menu-label">Analytics</span>}
-          </li>
+          <>
+            <li
+              className={`menu-item clickable ${
+                selectedMenu === "analytics" ? "active" : ""
+              }`}
+              onClick={() => onSelectMenu("analytics")}
+            >
+              <IoStatsChart className="menu-icon" size={22} />
+              {!isCollapsed && <span className="menu-label">Analytics</span>}
+            </li>
+
+            <li
+              className={`menu-item clickable ${
+                selectedMenu === "recommendation" ? "active" : ""
+              }`}
+              onClick={() => onSelectMenu("recommendation")}
+            >
+              <HiSparkles className="menu-icon" size={22} />
+              {!isCollapsed && <span className="menu-label">Recommendations</span>}
+            </li>
+          </>
         )}
 
         <li

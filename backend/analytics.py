@@ -116,6 +116,9 @@ def get_retention():
 def get_combined_dashboard():
     client = get_ga_client()
     data = []
+    
+    print(f"[GA DEBUG] Client available: {client is not None}")
+    print(f"[GA DEBUG] GA Property ID: {os.getenv('GA_PROPERTY_ID')}")
 
     if client:
         try:
@@ -134,11 +137,14 @@ def get_combined_dashboard():
                     "users": int(row.metric_values[0].value),
                     "avg_duration": float(row.metric_values[1].value)
                 })
-        except Exception:
+            print(f"[GA DEBUG] GA returned {len(data)} rows")
+        except Exception as e:
+            print(f"[GA DEBUG] GA ERROR: {str(e)}")
             data = []
 
     # FALLBACK: Ako nema Googlea, koristi MongoDB podatke koje smo vidjeli na slici
     if not data:
+        print(f"[GA DEBUG] Using MongoDB FALLBACK (no GA data)")
         events_collection = clusters_collection["user_events"]
         # Grupiramo po stranici i uređaju da simuliramo prave podatke
         pipeline = [
@@ -165,6 +171,9 @@ def get_combined_dashboard():
             {"$sort": {"users": -1}}
         ]
         data = list(events_collection.aggregate(pipeline))
+        print(f"[GA DEBUG] MongoDB returned {len(data)} rows")
+    else:
+        print(f"[GA DEBUG] Using REAL GA DATA ({len(data)} rows)")
 
     return jsonify(data)
 
@@ -215,21 +224,18 @@ def track_event():
         "page": data.get("page"),
         "device": data.get("device"),
         "timestamp": datetime.now(),
-        "user_id": session.get("user_id", "anonymous") 
+        "user_id": data.get("user_id", "anonymous")
     })
     return jsonify({"status": "ok"}), 201
 
 @analytics.route("/analytics/recommendations", methods=["GET"])
 def get_recommendations():
-    user = session.get("user")
-    print(f"[RECOMMENDATIONS] User from session: {user}")
-    if not user:
-        print(f"[RECOMMENDATIONS] No user found in session")
+    # Čitaj user_id iz query parametra umjesto iz sesije
+    current_user_id = request.args.get("user_id")
+    print(f"[RECOMMENDATIONS] User ID from query param: {current_user_id}")
+    if not current_user_id:
+        print(f"[RECOMMENDATIONS] No user_id provided")
         return jsonify({"error": "Unauthorized"}), 401
-    
-    # PROMJENA: Koristimo jedinstveni ID iz sesije (Google sub ID)
-    current_user_id = user.get("id") or user.get("sub")
-    print(f"[RECOMMENDATIONS] Current user ID: {current_user_id}")
     
     # Kolekcija s eventima (prema slici tvoje baze)
     events_collection = clusters_collection["user_events"]
@@ -257,7 +263,7 @@ def get_recommendations():
     from collections_map import collections_map
     target_col = collections_map.get(favorite_category)
     
-    if not target_col:
+    if target_col is None:
         return jsonify({"error": "Category not found"}), 404
 
     # Dohvati 3 najnovije vijesti

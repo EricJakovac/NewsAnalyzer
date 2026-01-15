@@ -294,5 +294,47 @@ def generate_mock_data():
         "napomena": "Sada će se u Path Analizi vidjeti stvarne kategorije vijesti."
     })
 
+@app.route("/generate-mock-data-for-user/<user_id>")
+def generate_mock_data_for_user(user_id):
+    events_collection = clusters_collection["user_events"]
+    pages = [
+        "home", "general", "business", "entertainment", 
+        "health", "science", "sports", "technology", 
+    ]
+    devices = ["mobile", "desktop", "tablet"]
+    
+    weighted_pages = [
+        "home", "home", "home",  # 30% home
+        "business", "business",   # 20% business 
+        "entertainment",   # 10% entertainment
+        "general", "general",  # 20% general
+        "health", "science", #po 10%
+        "sports", "sports", #po 20%
+        "technology", "technology", "technology", "technology", "technology", # po 50%
+    ]
+    
+    mock_data = []
+    for i in range(100):
+        page = random.choice(weighted_pages)
+        mock_data.append({
+            "user_id": user_id,
+            "page": page,
+            "device": random.choice(devices),
+            "timestamp": datetime.now() - timedelta(
+                days=random.randint(0, 15), 
+                hours=random.randint(0, 23)
+            )
+        })
+    
+    # Samo dodaj nove podatke 
+    events_collection.insert_many(mock_data)
+    
+    return jsonify({
+        "message": f"Uspješno generirano 100 evenata za usera {user_id}!",
+        "note": "Stari podaci nisu obrisani. Sada će preporuke raditi za ovog korisnika.",
+        "user_id": user_id,
+        "events_count": 100
+    })
+
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=int(os.getenv("PORT", 5000)))

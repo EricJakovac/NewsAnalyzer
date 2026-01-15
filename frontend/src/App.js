@@ -61,6 +61,7 @@ function App() {
       sports: "Sports",
       technology: "Technology",
       analytics: "Analytics Dashboard",
+      recommendation: "Personalized Recommendations",
     };
     return displayMap[menu] || "Home";
   }, []);
@@ -78,6 +79,7 @@ function App() {
       sports: "Game-changing moments and athletic achievements",
       technology: "Innovation and tech breakthroughs that matter",
       analytics: "Visualize and understand user behavior with data",
+      recommendation: "Articles tailored to your reading habits",
     };
     return subtitleMap[menu] || "Stay informed, stay ahead";
   }, []);
@@ -291,11 +293,14 @@ function App() {
         setUser(userData);
         // Spremi u localStorage za buduće refresh-e
         localStorage.setItem("user", JSON.stringify(userData));
-        console.log("User data from URL decoded and saved to localStorage:", userData);
+        console.log(
+          "User data from URL decoded and saved to localStorage:",
+          userData
+        );
       } catch (e) {
         console.error("Failed to parse user data from URL:", e);
       }
-    } 
+    }
     // Korak 2: Ako nema URL data, provjeri localStorage (nakon refresh-a)
     else {
       const storedUser = localStorage.getItem("user");
@@ -320,10 +325,7 @@ function App() {
 
         if (res.ok) {
           const userData = await res.json();
-          console.log(
-            "User retrieved from session:",
-            userData
-          );
+          console.log("User retrieved from session:", userData);
           setUser(userData);
           // Spremi u localStorage kao backup
           localStorage.setItem("user", JSON.stringify(userData));
@@ -411,7 +413,7 @@ function App() {
             {getCategorySubtitle(selectedMenu)}
           </p>
         </div>
-        {/* JEDNOSTAVNA LOGIKA ZA AUTH STRANICE */}
+        {/* JEDNOSTAVNA LOGIKA ZA STRANICE KOJE NISU LISTE VIJESTI */}
         {selectedMenu === "auth" ? (
           <div className="auth-page-wrapper">
             <Auth user={user} onLogout={handleLogout} />
@@ -420,14 +422,12 @@ function App() {
           <div className="analytics-page-wrapper">
             <Analytics />
           </div>
+        ) : selectedMenu === "recommendation" ? (
+          <div className="recommendation-page-wrapper">
+            <Recommendation isFullPage={true} />
+          </div>
         ) : (
           <>
-            {/* NOVI BLOK ZA PREPORUKE */}
-            {selectedMenu === "home" && user && (user.id || user.sub) && (
-              <div className="recommendation-container-wrapper">
-                <Recommendation />
-              </div>
-            )}
             <Search
               value={searchQuery}
               onInputChange={onInputChange}
