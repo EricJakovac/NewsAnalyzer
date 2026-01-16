@@ -57,7 +57,7 @@ const Table = ({ data = [], onRowClick }) => {
         </thead>
         <tbody>
           {data.map((item, index) => (
-            <tr key={item._id || item.id || index}>
+            <tr key={item._id || item.id || index} style={{ animationDelay: `${index * 0.05}s` }}>
               <td>{index + 1}</td>
               <td title={item.title}>{truncateText(item.title, 80)}</td>
               <td>{getSource(item)}</td>

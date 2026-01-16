@@ -140,11 +140,33 @@ const SubcategoryChart = ({ topic }) => {
       .attr("fill", "#333446")
       .style("font-size", isMobile ? "11px" : "12px");
 
-    // stupci – horizontalni
-    const bars = g
-      .selectAll(".d3-bar")
+    // Kreiramo grupe za svaki redak
+    const barGroups = g
+      .selectAll(".bar-group")
       .data(data, (d) => d.subcategory)
-      .join("rect")
+      .join("g")
+      .attr("class", "bar-group")
+      .style("cursor", "pointer")
+      .on("click", (event, d) => {
+        const index = data.findIndex(
+          (item) => item.subcategory === d.subcategory
+        );
+        handleBarClick({ payload: d }, index);
+      });
+
+    // 1. Dodajemo pozadinski "highlight" pravokutnik (cijela širina grafikona)
+    barGroups
+      .append("rect")
+      .attr("class", "chart-row-hover")
+      .attr("x", 0) 
+      .attr("y", (d) => y(d.subcategory) - (y.step() * y.paddingInner()) / 2)
+      .attr("width", innerWidth)
+      .attr("height", y.step())
+      .attr("rx", 4);
+
+    // 2. Dodajemo tvoj postojeći stupac (bar)
+    const bars = barGroups
+      .append("rect")
       .attr("class", "d3-bar")
       .attr("y", (d) => y(d.subcategory))
       .attr("height", y.bandwidth())
@@ -152,13 +174,10 @@ const SubcategoryChart = ({ topic }) => {
       .attr("width", 0)
       .attr("rx", 4)
       .attr("ry", 4)
-      .style("cursor", "pointer")
       .attr("fill", (d, i) => {
         const base = COLORS[i % COLORS.length];
-        if (activeFilter && d.subcategory === activeFilter) {
-          return darkenColor(base);
-        }
-        return base;
+        const isFiltered = activeFilter === d.subcategory;
+        return isFiltered ? darkenColor(base) : base;
       });
 
     // animacija širine
@@ -224,11 +243,7 @@ const SubcategoryChart = ({ topic }) => {
   };
 
   if (data.length === 0) {
-    return (
-      <p className="loading">
-        Loading subcategory data...
-      </p>
-    );
+    return <p className="loading">Loading subcategory data...</p>;
   }
 
   return (

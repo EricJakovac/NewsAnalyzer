@@ -229,3 +229,24 @@
     display: none;
   }
 }
+
+.chart-row-hover {
+  /* Koristimo prozirnu sivu koja se stapa s pozadinom */
+  fill: rgba(0, 0, 0, 0.03); 
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  pointer-events: none;
+}
+
+/* Pojavljuje se samo kada je miš iznad grupe (teksta ili stupca) */
+.bar-group:hover .chart-row-hover {
+  opacity: 1;
+}
+
+/* Osigurajmo da grafikon ne prikazuje ništa izvan SVG-a ako animacija pobjegne */
+svg {
+  overflow: hidden;
+}
+.d3-bar {
+  cursor: pointer;
+}

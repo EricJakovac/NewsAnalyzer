@@ -86,11 +86,13 @@ thead tr::after {
   font-size: 1.2rem;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
   flex-shrink: 0;
+  transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
 .icon-btn:hover {
-  background: #7f8caa;
+  background: #7f8caa; 
   color: white;
+  transform: rotate(15deg) scale(1.1); 
 }
 
 .table-scroll-wrapper::-webkit-scrollbar {
@@ -105,4 +107,27 @@ thead tr::after {
 
 .table-scroll-wrapper::-webkit-scrollbar-track {
   background: #f1f1f1;
+}
+
+/* Suptilna boja za svaki drugi red */
+tbody tr:nth-child(even) {
+  background-color: #fcfcfc;
+}
+
+/* Hover efekt koji ističe cijeli red */
+tbody tr {
+  transition: all 0.2s ease;
+  opacity: 0; /* Za početnu animaciju */
+  animation: slideIn 0.4s ease forwards;
+}
+
+tbody tr:hover {
+  background-color: #f1f5f9 !important;
+  transform: scale(1.002); /* Minimalno povećanje za dubinu */
+  box-shadow: inset 4px 0 0 0 #7f8caa; /* "Glow" crta s lijeve strane */
+}
+
+@keyframes slideIn {
+  from { opacity: 0; transform: translateX(-10px); }
+  to { opacity: 1; transform: translateX(0); }
 }

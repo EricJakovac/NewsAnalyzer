@@ -9,7 +9,6 @@ import {
   fetchArticlesByTopic,
   searchArticles,
   getTopHeadlines,
-  searchTopHeadlines,
 } from "./api/NewsAPI";
 import Toast from "./components/Toast/Toast";
 import SubcategoryChart from "./components/Charts/SubcategoryChart";
@@ -185,48 +184,6 @@ function App() {
     }
   }, [selectedMenu, getCategoryFromMenu, loadArticles]);
 
-  const trackPageView = async (menuName) => {
-    // 1. Ručno javljanje Google Analyticsu (GA4) o promjeni virtualne stranice
-    const path = menuName === "home" ? "/" : `/${menuName}`;
-
-    if (window.gtag && process.env.REACT_APP_GA_ID) {
-      // 1. Prvo ažuriramo konfiguraciju (putanju i naslov)
-      window.gtag("config", process.env.REACT_APP_GA_ID, {
-        debug_mode: true,
-        page_path: path,
-        page_title: getCategoryDisplayName(menuName),
-        send_page_view: false, // I dalje ostavljamo false ovdje da config ne pošalje dupli event
-      });
-
-      // 2. OVO NEDOSTAJE: Ručno slanje page_view događaja s novim podacima
-      window.gtag("event", "page_view", {
-        page_path: path,
-        page_title: getCategoryDisplayName(menuName),
-      });
-
-      console.log(`[GA4] Tracked & Sent: ${path}`);
-    }
-
-    // 2. Tvoja postojeća logika za MongoDB (ne mijenjaj je)
-    if (!user || (!user.id && !user.sub)) return;
-
-    try {
-      await fetch(`${process.env.REACT_APP_API_URL}/analytics/track`, {
-        method: "POST",
-        credentials: "include",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          user_id: user.id || user.sub,
-          page: menuName,
-          device: window.innerWidth < 768 ? "mobile" : "desktop",
-          timestamp: new Date().toISOString(),
-        }),
-      });
-    } catch (err) {
-      console.error("Greška pri slanju analitike u MongoDB:", err);
-    }
-  };
-
   // Search handler
   const handleSearch = useCallback(async () => {
     if (!searchQuery.trim()) {
@@ -262,25 +219,15 @@ function App() {
     }
   }, [searchQuery, selectedMenu, loadArticles, getCategoryFromMenu]);
 
-  const handleSearchTopHeadlines = async (searchQuery) => {
-    try {
-      const results = await searchTopHeadlines(searchQuery);
-      setArticles(results); // Pretpostavljam da koristiš setArticles za prikaz rezultata
-    } catch (error) {
-      console.error("Error searching top headlines:", error);
-      // Možeš dodati prikaz greške korisniku ako želiš
-    }
-  };
-
-  const onInputChange = (e) => {
+  const onInputChange = useCallback((e) => {
     setSearchQuery(e.target.value);
-  };
+  }, []);
 
   // Clear search input and show all articles
-  const handleClear = () => {
+  const handleClear = useCallback(() => {
     setSearchQuery("");
     loadArticles();
-  };
+  }, [loadArticles]);
 
   const handleRowClick = (article) => {
     if (
@@ -293,15 +240,6 @@ function App() {
     } else {
       setSelectedArticle(article);
       setShowInfoBlock(true);
-    }
-  };
-
-  const handleSearchInput = async (e) => {
-    const value = e.target.value;
-    setSearchQuery(value);
-
-    if (selectedMenu === "home" && value.trim() !== "") {
-      await handleSearchTopHeadlines(value);
     }
   };
 
@@ -330,6 +268,50 @@ function App() {
     window.location.href = `${process.env.REACT_APP_API_URL}/auth/logout`;
   };
 
+  const trackPageView = useCallback(
+    async (menuName) => {
+      // 1. Ručno javljanje Google Analyticsu (GA4) o promjeni virtualne stranice
+      const path = menuName === "home" ? "/" : `/${menuName}`;
+
+      if (window.gtag && process.env.REACT_APP_GA_ID) {
+        // 1. Prvo ažuriramo konfiguraciju (putanju i naslov)
+        window.gtag("config", process.env.REACT_APP_GA_ID, {
+          debug_mode: true,
+          page_path: path,
+          page_title: getCategoryDisplayName(menuName),
+          send_page_view: false,
+        });
+
+        window.gtag("event", "page_view", {
+          page_path: path,
+          page_title: getCategoryDisplayName(menuName),
+        });
+
+        console.log(`[GA4] Tracked & Sent: ${path}`);
+      }
+
+      // 2. Tvoja postojeća logika za MongoDB (ne mijenjaj je)
+      if (!user || (!user.id && !user.sub)) return;
+
+      try {
+        await fetch(`${process.env.REACT_APP_API_URL}/analytics/track`, {
+          method: "POST",
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            user_id: user.id || user.sub,
+            page: menuName,
+            device: window.innerWidth < 768 ? "mobile" : "desktop",
+            timestamp: new Date().toISOString(),
+          }),
+        });
+      } catch (err) {
+        console.error("Greška pri slanju analitike u MongoDB:", err);
+      }
+    },
+    [user, getCategoryDisplayName]
+  );
+
   // Load articles on tab change or when search is cleared
   useEffect(() => {
     if (
@@ -341,7 +323,7 @@ function App() {
     if (!searchQuery.trim()) {
       loadArticles();
     }
-  }, [loadArticles, searchQuery]);
+  }, [selectedMenu, loadArticles, searchQuery]);
 
   // Analytics tracking - poziva se pri svakoj promjeni izbornika
   useEffect(() => {
@@ -358,7 +340,7 @@ function App() {
       );
       // Ovdje ide tvoj poziv prema backendu/bazi
     }
-  }, [selectedMenu, user]); // Dodaj user ovdje da se interni log opali kad se on učita
+  }, [selectedMenu, user, trackPageView]); // Dodaj user ovdje da se interni log opali kad se on učita
 
   // User authentication and session management
   useEffect(() => {
@@ -598,7 +580,7 @@ function App() {
                   )}
                 </div>
               )}
-              
+
               {/* General Articles*/}
               {selectedMenu === "general" && (
                 <GeneralArticles
