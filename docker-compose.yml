@@ -21,22 +21,30 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
+    volumes:
+      - ./backend:/app
     container_name: flask
     ports:
       - "5000:5000"
-    environment:
-      - ELASTIC_URL=${ELASTIC_URL}
-      - FLASK_ENV=development
-      - ELASTIC_URL=${ELASTIC_URL}
-      - ELASTIC_USER=${ELASTIC_USER}
-      - ELASTIC_PASS=${ELASTIC_PASS}
+    env_file:
+      - ./backend/.env
+
   react:
     build:
       context: ./frontend
       dockerfile: Dockerfile
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules        # DODAJ OVO (izolira teške module)
     container_name: react
     ports:
       - "3000:3000"
+    environment:
+      - CHOKIDAR_USEPOLLING=true
+      - WATCHPACK_POLLING=true   # DODAJ OVO (za novije verzije)
+      - WDS_SOCKET_PORT=0        # DODAJ OVO (popravlja websocket na Windowsima)
+    env_file:
+      - ./frontend/.env
 
 volumes:
   es_data:
