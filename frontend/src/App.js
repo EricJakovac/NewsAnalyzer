@@ -203,7 +203,7 @@ function App() {
             article.description
               ?.toLowerCase()
               .includes(searchQuery.toLowerCase()) ||
-            article.content?.toLowerCase().includes(searchQuery.toLowerCase())
+            article.content?.toLowerCase().includes(searchQuery.toLowerCase()),
         );
         setArticles(filteredArticles);
       } else {
@@ -290,26 +290,26 @@ function App() {
         console.log(`[GA4] Tracked & Sent: ${path}`);
       }
 
-      // 2. Tvoja postojeća logika za MongoDB (ne mijenjaj je)
-      if (!user || (!user.id && !user.sub)) return;
-
-      try {
-        await fetch(`${process.env.REACT_APP_API_URL}/analytics/track`, {
-          method: "POST",
-          credentials: "include",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            user_id: user.id || user.sub,
-            page: menuName,
-            device: window.innerWidth < 768 ? "mobile" : "desktop",
-            timestamp: new Date().toISOString(),
-          }),
-        });
-      } catch (err) {
-        console.error("Greška pri slanju analitike u MongoDB:", err);
+      // 2. Tvoja postojeća logika za MongoDB tracking
+      if (!user || (!user.id && !user.sub)) {
+        try {
+          await fetch(`${process.env.REACT_APP_API_URL}/analytics/track`, {
+            method: "POST",
+            credentials: "include",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              user_id: user.id || user.sub,
+              page: menuName,
+              device: window.innerWidth < 768 ? "mobile" : "desktop",
+              timestamp: new Date().toISOString(),
+            }),
+          });
+        } catch (err) {
+          console.error("Greška pri slanju analitike u MongoDB:", err);
+        }
       }
     },
-    [user, getCategoryDisplayName]
+    [user, getCategoryDisplayName],
   );
 
   // Load articles on tab change or when search is cleared
@@ -336,7 +336,7 @@ function App() {
     const ignoredTabsForDB = ["auth", "analytics", "recommendation"];
     if (selectedMenu && user && !ignoredTabsForDB.includes(selectedMenu)) {
       console.log(
-        `[DB-TRACKING] User ${user.id || user.sub} visited: ${selectedMenu}`
+        `[DB-TRACKING] User ${user.id || user.sub} visited: ${selectedMenu}`,
       );
       // Ovdje ide tvoj poziv prema backendu/bazi
     }
@@ -357,7 +357,7 @@ function App() {
         localStorage.setItem("user", JSON.stringify(userData));
         console.log(
           "User data from URL decoded and saved to localStorage:",
-          userData
+          userData,
         );
       } catch (e) {
         console.error("Failed to parse user data from URL:", e);
@@ -463,7 +463,7 @@ function App() {
               loading={loading}
               refreshing={refreshing}
               placeholder={`Search ${getCategoryDisplayName(
-                selectedMenu
+                selectedMenu,
               ).toLowerCase()} articles...`}
               onClear={handleClear}
               autoFocus={true}
@@ -651,7 +651,7 @@ function App() {
                           <p>
                             {selectedArticle.publishedAt
                               ? new Date(
-                                  selectedArticle.publishedAt
+                                  selectedArticle.publishedAt,
                                 ).toLocaleDateString()
                               : "N/A"}
                           </p>
