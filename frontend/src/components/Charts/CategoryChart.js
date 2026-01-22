@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import axios from "axios";
 import * as d3 from "d3";
 import Table from "../Table/Table";
@@ -42,9 +42,10 @@ export const fetchArticles = async () => {
   }
 };
 
-const CategoryChart = () => {
+const CategoryChart = ({user}) => {
   const isMobile = window.innerWidth < 768;
   const svgRef = useRef(null);
+  const sessionId = localStorage.getItem("news_session_id") || "no_session";
 
   const [data, setData] = useState([]);
   const [articles, setArticles] = useState([]);
@@ -56,6 +57,50 @@ const CategoryChart = () => {
   const [selectedArticle, setSelectedArticle] = useState(null);
   const [showInfoBlock, setShowInfoBlock] = useState(false);
 
+  // Definišite handleBarClick na vrhu komponente sa useCallback
+  const handleBarClick = useCallback(async (entry, index) => {
+    if (!entry || !entry.payload || !entry.payload.category) return;
+
+    const clickedCategory = entry.payload.category;
+
+    try {
+      await fetch(`${process.env.REACT_APP_API_URL}/analytics/track`, {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          event: "chart_filter_click",
+          chart_type: "category_chart",
+          filter_value: clickedCategory,
+          page: window.location.pathname,
+          session_id: sessionId || "no_session", 
+          flow_type: "chart_interaction",
+          user_id: user?.id || user?.sub || "anonymous",
+          device: window.innerWidth < 768 ? "mobile" : "desktop",
+          timestamp: new Date().toISOString(),
+        }),
+      });
+      console.log(`[Analytics] Tracked chart filter: ${clickedCategory}`);
+    } catch (err) {
+      console.error("Error tracking chart click:", err);
+    }
+
+    try {
+      const response = await axios.get(`${BASE_URL}/articles-by-category`, {
+        params: { category: clickedCategory },
+      });
+
+      setArticles(response.data);
+      setActiveFilter(clickedCategory);
+      setActiveColor(COLORS[index % COLORS.length]);
+
+      setShowInfoBlock(false);
+      setSelectedArticle(null);
+    } catch (error) {
+      console.error("Error fetching articles for category:", error);
+    }
+  }, [user]);
+
   useEffect(() => {
     const fetchCategoryStats = async () => {
       try {
@@ -64,7 +109,7 @@ const CategoryChart = () => {
         setError(null);
       } catch (err) {
         setError(
-          err.response?.data?.error || "Error loading category statistics."
+          err.response?.data?.error || "Error loading category statistics.",
         );
         setData([]);
       }
@@ -144,7 +189,7 @@ const CategoryChart = () => {
     // Kreiramo grupe za svaki redak
     const barGroups = g
       .selectAll(".bar-group")
-      .data(data, (d) => d.category) // Ovdje je bila greška (zagrada)
+      .data(data, (d) => d.category)
       .join("g")
       .attr("class", "bar-group")
       .style("cursor", "pointer")
@@ -190,28 +235,7 @@ const CategoryChart = () => {
       const index = data.findIndex((item) => item.category === d.category);
       handleBarClick({ payload: d }, index);
     });
-  }, [data, activeFilter, isMobile]);
-
-  const handleBarClick = async (entry, index) => {
-    if (!entry || !entry.payload || !entry.payload.category) return;
-
-    const clickedCategory = entry.payload.category;
-
-    try {
-      const response = await axios.get(`${BASE_URL}/articles-by-category`, {
-        params: { category: clickedCategory },
-      });
-
-      setArticles(response.data);
-      setActiveFilter(clickedCategory);
-      setActiveColor(COLORS[index % COLORS.length]);
-
-      setShowInfoBlock(false);
-      setSelectedArticle(null);
-    } catch (error) {
-      console.error("Error fetching articles for category:", error);
-    }
-  };
+  }, [data, activeFilter, isMobile, handleBarClick]);
 
   const resetFilter = async () => {
     try {
@@ -343,7 +367,7 @@ const CategoryChart = () => {
                     <strong>Published:</strong>
                     <p>
                       {new Date(
-                        selectedArticle.publishedAt
+                        selectedArticle.publishedAt,
                       ).toLocaleDateString()}
                     </p>
                   </div>

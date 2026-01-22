@@ -25,6 +25,52 @@ const categoryIcons = {
   Technology: <FaComputer className="menu-icon" size={22} />,
 };
 
+// MenuItem komponenta - DODANO sve potrebne klase i isCollapsed
+const MenuItem = ({
+  label,
+  menu,
+  selected,
+  onClick,
+  icon,
+  user,
+  isCollapsed,
+}) => {
+  const sessionId = localStorage.getItem("news_session_id") || "no_session";
+  const trackCategoryClick = async () => {
+    onClick(menu);
+
+    try {
+      await fetch(`${process.env.REACT_APP_API_URL}/analytics/track`, {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          event: "category_click",
+          category: menu,
+          page: menu === "home" ? "/" : `/${menu}`,
+          user_id: user?.id || user?.sub || "anonymous",
+          session_id: sessionId || "no_session",
+          flow_type: "direct_navigation",
+          device: window.innerWidth < 768 ? "mobile" : "desktop",
+          timestamp: new Date().toISOString(),
+        }),
+      });
+      console.log(`[Analytics] Tracked category click: ${menu}`);
+    } catch (err) {
+      console.error("Error tracking category click:", err);
+    }
+  };
+
+  return (
+    <li className={`menu-item clickable ${selected ? "active" : ""}`}>
+      <button onClick={trackCategoryClick} className="menu-button">
+        <span className="menu-icon">{icon}</span>
+        {!isCollapsed && <span className="menu-label">{label}</span>}
+      </button>
+    </li>
+  );
+};
+
 function Menu({
   onSelectMenu,
   selectedMenu,
@@ -58,14 +104,10 @@ function Menu({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [showProfileCard]);
 
-  const isActive = (menuItem) =>
-    menuItem === "home"
-      ? selectedMenu === "home"
-      : selectedMenu === menuItem.toLowerCase();
-
   return (
     <menu className={isCollapsed ? "collapsed" : ""}>
       <ul id="mainMenu">
+        {/* MENU TOGGLE */}
         <li
           className="menu-item clickable menu-toggle"
           onClick={() => setIsCollapsed((prev) => !prev)}
@@ -74,6 +116,7 @@ function Menu({
           {!isCollapsed && <span className="menu-label">Menu</span>}
         </li>
 
+        {/* LOGIN/LOGOUT */}
         {!user ? (
           <li
             className={`menu-item clickable ${
@@ -105,15 +148,12 @@ function Menu({
               )}
               {!isCollapsed && <span className="menu-label">{user.name}</span>}
             </div>
-
             {showProfileCard && (
               <>
-                {/* Ovaj div će CSS sakriti na desktopu, a prikazati na mobitelu */}
                 <div
                   className="mobile-overlay-backdrop"
                   onClick={() => setShowProfileCard(false)}
                 />
-
                 <div className="user-profile-card">
                   <div className="card-header">
                     <img src={user.picture} alt="User" />
@@ -132,7 +172,7 @@ function Menu({
                       setShowProfileCard(false);
                     }}
                   >
-                    <FaSignOutAlt size={14} /> Odjavi se
+                    <FaSignOutAlt size={14} /> Logout
                   </button>
                 </div>
               </>
@@ -142,45 +182,53 @@ function Menu({
 
         {user && (
           <>
-            <li
-              className={`menu-item clickable ${
-                selectedMenu === "analytics" ? "active" : ""
-              }`}
-              onClick={() => onSelectMenu("analytics")}
-            >
-              <IoStatsChart className="menu-icon" size={22} />
-              {!isCollapsed && <span className="menu-label">Analytics</span>}
-            </li>
+            {/* ANALYTICS */}
+            <MenuItem
+              label="Analytics"
+              menu="analytics"
+              selected={selectedMenu === "analytics"}
+              onClick={onSelectMenu}
+              icon={<IoStatsChart className="menu-icon" size={22} />}
+              user={user}
+              isCollapsed={isCollapsed} // DODANO
+            />
 
-            <li
-              className={`menu-item clickable ${
-                selectedMenu === "recommendation" ? "active" : ""
-              }`}
-              onClick={() => onSelectMenu("recommendation")}
-            >
-              <HiSparkles className="menu-icon" size={22} />
-              {!isCollapsed && <span className="menu-label">Recommendations</span>}
-            </li>
+            {/* RECOMMENDATIONS */}
+            <MenuItem
+              label="Recommendations"
+              menu="recommendation"
+              selected={selectedMenu === "recommendation"}
+              onClick={onSelectMenu}
+              icon={<HiSparkles className="menu-icon" size={22} />}
+              user={user}
+              isCollapsed={isCollapsed} // DODANO
+            />
           </>
         )}
 
-        <li
-          className={`menu-item clickable ${isActive("home") ? "active" : ""}`}
-          onClick={() => onSelectMenu("home")}
-        >
-          <GoHomeFill className="menu-icon" size={22} />
-          {!isCollapsed && <span className="menu-label">Home</span>}
-        </li>
+        {/* HOME */}
+        <MenuItem
+          label="Home"
+          menu="home"
+          selected={selectedMenu === "home"}
+          onClick={onSelectMenu}
+          icon={<GoHomeFill className="menu-icon" size={22} />}
+          user={user}
+          isCollapsed={isCollapsed} // DODANO
+        />
 
+        {/* NEWS CATEGORIES */}
         {newsCategories.map((cat, i) => (
-          <li
+          <MenuItem
             key={i}
-            className={`menu-item clickable ${isActive(cat) ? "active" : ""}`}
-            onClick={() => onSelectMenu(cat.toLowerCase())}
-          >
-            {categoryIcons[cat]}
-            {!isCollapsed && <span className="menu-label">{cat}</span>}
-          </li>
+            label={cat}
+            menu={cat.toLowerCase()}
+            selected={selectedMenu === cat.toLowerCase()}
+            onClick={onSelectMenu}
+            icon={categoryIcons[cat]}
+            user={user}
+            isCollapsed={isCollapsed} // DODANO
+          />
         ))}
       </ul>
     </menu>

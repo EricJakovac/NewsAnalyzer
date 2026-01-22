@@ -2,7 +2,9 @@ import React from "react";
 import { GoEye } from "react-icons/go";
 import "./Table.css";
 
-const Table = ({ data = [], onRowClick }) => {
+const Table = ({ data = [], onRowClick, user }) => {
+
+  const sessionId = localStorage.getItem("news_session_id") || "no_session";
   // Helper function to format date
   const formatDate = (dateString) => {
     try {
@@ -40,6 +42,34 @@ const Table = ({ data = [], onRowClick }) => {
       : text;
   };
 
+  const handleViewDetails = async (item) => {
+    onRowClick(item); // Originalna funkcija
+
+    // Tracking za otvaranje članka
+    try {
+      await fetch(`${process.env.REACT_APP_API_URL}/analytics/track`, {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          event: "article_open",
+          article_id: item.url || item._id || item.id,
+          article_title: item.title,
+          category: item.category || "unknown",
+          subcategory: item.subcategory || "none",
+          session_id: sessionId || "no_session",
+          flow_type: "table",
+          user_id: user?.id || user?.sub || "anonymous",
+          device: "desktop",
+          timestamp: new Date().toISOString(),
+        }),
+      });
+      console.log(`[Analytics] Tracked article: ${item.title}`);
+    } catch (err) {
+      console.error("Error tracking article:", err);
+    }
+  };
+
   return (
     <div className="table-scroll-wrapper">
       <table>
@@ -57,7 +87,10 @@ const Table = ({ data = [], onRowClick }) => {
         </thead>
         <tbody>
           {data.map((item, index) => (
-            <tr key={item._id || item.id || index} style={{ animationDelay: `${index * 0.05}s` }}>
+            <tr
+              key={item._id || item.id || index}
+              style={{ animationDelay: `${index * 0.05}s` }}
+            >
               <td>{index + 1}</td>
               <td title={item.title}>{truncateText(item.title, 80)}</td>
               <td>{getSource(item)}</td>
@@ -67,7 +100,7 @@ const Table = ({ data = [], onRowClick }) => {
                 <span className="actions-btns">
                   <button
                     className="icon-btn"
-                    onClick={() => onRowClick(item)}
+                    onClick={() => handleViewDetails(item)}
                     title="View Details"
                   >
                     <GoEye size={20} />

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import axios from "axios";
 import * as d3 from "d3";
 import Table from "../Table/Table";
@@ -42,9 +42,10 @@ const darkenColor = (color) => {
   return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
 };
 
-const SubcategoryChart = ({ topic }) => {
+const SubcategoryChart = ({ topic, user }) => {
   const isMobile = window.innerWidth < 768;
   const svgRef = useRef(null);
+  const sessionId = localStorage.getItem("news_session_id") || "no_session";
 
   const [data, setData] = useState([]);
   const [articles, setArticles] = useState([]);
@@ -54,6 +55,49 @@ const SubcategoryChart = ({ topic }) => {
   // lokalni info block
   const [selectedArticle, setSelectedArticle] = useState(null);
   const [showInfoBlock, setShowInfoBlock] = useState(false);
+
+  // Definišite handleBarClick na vrhu komponente sa useCallback
+  const handleBarClick = useCallback(async (entry, index) => {
+    const clickedSubcategory = entry.payload.subcategory;
+    if (!clickedSubcategory) return;
+
+    try {
+      await fetch(`${process.env.REACT_APP_API_URL}/analytics/track`, {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          event: "chart_filter_click",
+          chart_type: "subcategory_chart",
+          filter_value: clickedSubcategory,
+          session_id: sessionId || "no_session", 
+          flow_type: "chart_interaction",
+          page: window.location.pathname,
+          user_id: user?.id || user?.sub || "anonymous",
+          device: window.innerWidth < 768 ? "mobile" : "desktop",
+          timestamp: new Date().toISOString(),
+        }),
+      });
+      console.log(`[Analytics] Tracked subchart filter: ${clickedSubcategory}`);
+    } catch (err) {
+      console.error("Error tracking subchart click:", err);
+    }
+
+    try {
+      const response = await axios.get(`${BASE_URL}/articles-by-subcategory`, {
+        params: { subcategory: clickedSubcategory },
+      });
+
+      setArticles(response.data);
+      setActiveFilter(clickedSubcategory);
+      setActiveColor(COLORS[index % COLORS.length]);
+
+      setShowInfoBlock(false);
+      setSelectedArticle(null);
+    } catch (error) {
+      console.error("Greška pri dohvaćanju članaka za subkategoriju:", error);
+    }
+  }, [user]);
 
   useEffect(() => {
     const fetchSubcategoryStats = async () => {
@@ -149,7 +193,7 @@ const SubcategoryChart = ({ topic }) => {
       .style("cursor", "pointer")
       .on("click", (event, d) => {
         const index = data.findIndex(
-          (item) => item.subcategory === d.subcategory
+          (item) => item.subcategory === d.subcategory,
         );
         handleBarClick({ payload: d }, index);
       });
@@ -158,7 +202,7 @@ const SubcategoryChart = ({ topic }) => {
     barGroups
       .append("rect")
       .attr("class", "chart-row-hover")
-      .attr("x", 0) 
+      .attr("x", 0)
       .attr("y", (d) => y(d.subcategory) - (y.step() * y.paddingInner()) / 2)
       .attr("width", innerWidth)
       .attr("height", y.step())
@@ -189,31 +233,11 @@ const SubcategoryChart = ({ topic }) => {
     // click filtriranje po subkategoriji
     bars.on("click", (event, d) => {
       const index = data.findIndex(
-        (item) => item.subcategory === d.subcategory
+        (item) => item.subcategory === d.subcategory,
       );
       handleBarClick({ payload: d }, index);
     });
-  }, [data, activeFilter, isMobile, topic]);
-
-  const handleBarClick = async (entry, index) => {
-    const clickedSubcategory = entry.payload.subcategory;
-    if (!clickedSubcategory) return;
-
-    try {
-      const response = await axios.get(`${BASE_URL}/articles-by-subcategory`, {
-        params: { subcategory: clickedSubcategory },
-      });
-
-      setArticles(response.data);
-      setActiveFilter(clickedSubcategory);
-      setActiveColor(COLORS[index % COLORS.length]);
-
-      setShowInfoBlock(false);
-      setSelectedArticle(null);
-    } catch (error) {
-      console.error("Greška pri dohvaćanju članaka za subkategoriju:", error);
-    }
-  };
+  }, [data, activeFilter, isMobile, handleBarClick]);
 
   const resetFilter = async () => {
     try {
@@ -340,7 +364,7 @@ const SubcategoryChart = ({ topic }) => {
                     <strong>Published:</strong>
                     <p>
                       {new Date(
-                        selectedArticle.publishedAt
+                        selectedArticle.publishedAt,
                       ).toLocaleDateString()}
                     </p>
                   </div>

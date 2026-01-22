@@ -37,6 +37,11 @@ function App() {
   // Ref for scrollable content
   const mainContentRef = useRef(null);
 
+  const [sessionId] = useState(
+    () =>
+      "session_" + Date.now() + "_" + Math.random().toString(36).substr(2, 9),
+  );
+
   // List of tabs that have subcategories and should show the chart
   const tabsWithSubcategory = [
     "business",
@@ -229,6 +234,34 @@ function App() {
     loadArticles();
   }, [loadArticles]);
 
+  const trackArticleClick = async (article, menu, flowType = "general") => {
+    try {
+      await fetch(`${process.env.REACT_APP_API_URL}/analytics/track`, {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          event: "article_open",
+          article_id: article.url || article._id,
+          article_title: article.title,
+          article_category: article.category || menu || "general",
+          page: window.location.pathname,
+          user_id: user?.id || user?.sub || "anonymous",
+          device: window.innerWidth < 768 ? "mobile" : "desktop",
+          session_id: sessionId, // ← DODAJTE OVO!
+          flow_type: flowType, // ← DODAJTE OVO!
+          timestamp: new Date().toISOString(),
+        }),
+      });
+      console.log(
+        `[Analytics] Tracked article (${flowType}): ${article.title}`,
+      );
+    } catch (err) {
+      console.error("Error tracking article:", err);
+    }
+  };
+
+  // U handleRowClick pozovite s flow_type:
   const handleRowClick = (article) => {
     if (
       selectedArticle &&
@@ -241,6 +274,21 @@ function App() {
       setSelectedArticle(article);
       setShowInfoBlock(true);
     }
+
+    // Odredite flow_type na temelju konteksta:
+    let flowType = "general";
+
+    if (selectedMenu === "home" && !searchQuery.trim()) {
+      flowType = "home_navigation"; // Poseban flow za home
+    } else if (selectedMenu === "general") {
+      flowType = "general_navigation"; // Poseban flow za general tab
+    } else if (searchQuery.trim()) {
+      flowType = "search_results"; // Članak iz search rezultata
+    } else {
+      flowType = "direct_navigation"; // Default
+    }
+
+    trackArticleClick(article, selectedMenu, flowType);
   };
 
   const handleMenuSelect = (menu) => {
@@ -422,6 +470,7 @@ function App() {
         isCollapsed={isSidebarCollapsed}
         setIsCollapsed={setIsSidebarCollapsed}
         user={user}
+        sessionId={sessionId}
         onLogout={handleLogout}
       />
 
@@ -451,7 +500,11 @@ function App() {
           </div>
         ) : selectedMenu === "recommendation" ? (
           <div className="recommendation-page-wrapper">
-            <Recommendation isFullPage={true} />
+            <Recommendation
+              isFullPage={true}
+              user={user}
+              sessionId={sessionId}
+            />
           </div>
         ) : (
           <>
@@ -467,6 +520,8 @@ function App() {
               ).toLowerCase()} articles...`}
               onClear={handleClear}
               autoFocus={true}
+              user={user}
+              sessionId={sessionId}
             />
 
             {/* Show chart for tabs with subcategories except for topic "general" */}
@@ -474,14 +529,23 @@ function App() {
               selectedMenu !== "general" &&
               !searchQuery.trim() && (
                 <div className="subcategory-chart-wrapper">
-                  <SubcategoryChart key={refreshKey} topic={selectedMenu} />
+                  <SubcategoryChart
+                    key={refreshKey}
+                    topic={selectedMenu}
+                    user={user}
+                    sessionId={sessionId}
+                  />
                 </div>
               )}
 
             {/* Show CategoryChart for home tab */}
             {selectedMenu === "home" && !searchQuery.trim() && (
               <div className="category-chart-wrapper">
-                <CategoryChart key={refreshKey} />
+                <CategoryChart
+                  key={refreshKey}
+                  user={user}
+                  sessionId={sessionId}
+                />
               </div>
             )}
 
@@ -530,11 +594,18 @@ function App() {
                           </p>
                         </div>
                         {isMobile ? (
-                          <Cards data={articles} onRowClick={handleRowClick} />
+                          <Cards
+                            data={articles}
+                            onRowClick={handleRowClick}
+                            user={user}
+                            sessionId={sessionId}
+                          />
                         ) : (
                           <Table
                             data={articles}
                             onRowClick={handleRowClick}
+                            user={user}
+                            sessionId={sessionId}
                             showAdditionalButtons={!showInfoBlock}
                           />
                         )}
@@ -591,6 +662,8 @@ function App() {
                   isMobile={isMobile}
                   handleRowClick={handleRowClick}
                   showInfoBlock={showInfoBlock}
+                  user={user}
+                  sessionId={sessionId}
                 />
               )}
 

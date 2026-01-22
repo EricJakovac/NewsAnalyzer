@@ -10,6 +10,8 @@ const GeneralArticles = ({
   isMobile,
   handleRowClick,
   showInfoBlock,
+  user,
+  sessionId,
 }) => {
   
   // 1. Ako imamo ERROR i nemamo nikakvih članaka od prije, pokaži samo error
@@ -56,9 +58,9 @@ const GeneralArticles = ({
           {/* Ovdje možeš dodati mali diskretni spinner ako želiš, 
               ali tablica ostaje vidljiva */}
           {isMobile ? (
-            <Cards data={articles} onRowClick={handleRowClick} />
+            <Cards data={articles} onRowClick={handleRowClick} user={user} sessionId={sessionId} />
           ) : (
-            <Table data={articles} onRowClick={handleRowClick} />
+            <Table data={articles} onRowClick={handleRowClick} user={user} sessionId={sessionId} />
           )}
         </>
       )}

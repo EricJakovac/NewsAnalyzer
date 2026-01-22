@@ -1,8 +1,9 @@
 import React, { useState } from "react";
 import "./Cards.css";
 
-const Cards = ({ data = [] }) => {
+const Cards = ({ data = [], user }) => {
   const [activeArticle, setActiveArticle] = useState(null);
+  const sessionId = localStorage.getItem("news_session_id") || "no_session";
 
   const formatDate = (dateString) => {
     if (!dateString) return "N/A";
@@ -19,12 +20,37 @@ const Cards = ({ data = [] }) => {
 
   const getSource = (article) => article?.source?.name || "Unknown";
 
-  const handleSeeMore = (item) => {
-    setActiveArticle(item);
-  };
-
   const closePopup = () => {
     setActiveArticle(null);
+  };
+
+  const handleReadMore = async (item) => {
+    setActiveArticle(item); // Originalna funkcija
+
+    // Tracking za otvaranje članka
+    try {
+      await fetch(`${process.env.REACT_APP_API_URL}/analytics/track`, {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          event: "article_open",
+          article_id: item.url || item._id || item.id,
+          article_title: item.title,
+          category: item.category || "unknown",
+          subcategory: item.subcategory || "none",
+          session_id: sessionId || "no_session",
+          flow_type: "card",
+          user_id: user?.id || user?.sub || "anonymous",
+          device: "mobile",
+          current_page: window.location.pathname,
+          timestamp: new Date().toISOString(),
+        }),
+      });
+      console.log(`[Analytics] Tracked article: ${item.title}`);
+    } catch (err) {
+      console.error("Error tracking article:", err);
+    }
   };
 
   return (
@@ -61,7 +87,7 @@ const Cards = ({ data = [] }) => {
             <button
               type="button"
               className="article-card-link"
-              onClick={() => handleSeeMore(item)}
+              onClick={() => handleReadMore(item)}
             >
               Read more
             </button>
@@ -101,9 +127,7 @@ const Cards = ({ data = [] }) => {
 
               <div className="card-summary-field">
                 <strong>Description:</strong>
-                <p>
-                  {activeArticle.description || "No description available"}
-                </p>
+                <p>{activeArticle.description || "No description available"}</p>
               </div>
 
               <div className="card-summary-field">
