@@ -99,7 +99,7 @@ const CategoryChart = ({user}) => {
     } catch (error) {
       console.error("Error fetching articles for category:", error);
     }
-  }, [user]);
+  }, [user, sessionId]);
 
   useEffect(() => {
     const fetchCategoryStats = async () => {

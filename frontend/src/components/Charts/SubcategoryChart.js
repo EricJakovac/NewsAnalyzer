@@ -97,7 +97,7 @@ const SubcategoryChart = ({ topic, user }) => {
     } catch (error) {
       console.error("Greška pri dohvaćanju članaka za subkategoriju:", error);
     }
-  }, [user]);
+  }, [user, sessionId]);
 
   useEffect(() => {
     const fetchSubcategoryStats = async () => {
