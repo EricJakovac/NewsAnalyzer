@@ -284,7 +284,7 @@ def get_simulated_path_analysis():
     """Simulirani podaci za path analizu"""
     
     simulated_common_paths = [
-        {"path": "home → analytics → article", "occurrences": 45, "percentage": 32.1},
+        {"path": "home → article", "occurrences": 45, "percentage": 32.1},
         {"path": "home → technology → article", "occurrences": 28, "percentage": 20.0},
         {"path": "home → business → article", "occurrences": 22, "percentage": 15.7},
         {"path": "home → home → analytics", "occurrences": 15, "percentage": 10.7},
@@ -307,7 +307,7 @@ def get_simulated_path_analysis():
     ]
     
     interpretation = (
-        "Most users (32.1%) follow the path: home → analytics → article. "
+        "Most users (32.1%) follow the path: home → article. "
         "This indicates clear user intent and good information architecture. "
         "Found 2 atypical navigation patterns: "
         "1. Path 'home → sports → health → technology' occurred 1 time. "
@@ -1036,43 +1036,59 @@ def get_user_distribution():
     
     # Dohvati korisnike i njihove preferirane kategorije
     pipeline = [
-        {
-            "$match": {
-                "timestamp": {"$gte": start_date},
-                "page": {"$exists": True, "$ne": None},
-                "user_id": {"$exists": True, "$ne": "anonymous"}
+            {
+                "$match": {
+                    "timestamp": {"$gte": start_date},
+                    "page": {"$exists": True, "$ne": None},
+                    "user_id": {"$exists": True, "$ne": "anonymous"}
+                }
+            },
+            # 1. Grupiraj po user_id + page da dobijemo broj interakcija po korisniku po kategoriji
+            {
+                "$group": {
+                    "_id": {
+                        "user_id": "$user_id",
+                        "category": "$page"
+                    },
+                    "interactions": {"$sum": 1}
+                }
+            },
+            # 2. Normaliziraj naziv kategorije i ukloni "analytics"
+            {
+                "$addFields": {
+                    "normalized_category": {
+                        "$cond": [
+                            {"$in": ["$_id.category", ["home", "/", "/home"]]},
+                            "Home",
+                            {"$trim": {"input": {"$replaceAll": {"input": "$_id.category", "find": "analytics", "replacement": ""}}}}
+                        ]
+                    }
+                }
+            },
+            # 3. Grupiraj po normaliziranoj kategoriji
+            {
+                "$group": {
+                    "_id": "$normalized_category",
+                    "unique_users": {"$sum": 1},
+                    "total_interactions": {"$sum": "$interactions"},
+                    "avg_interactions_per_user": {"$avg": "$interactions"}
+                }
+            },
+            # 4. Formatiraj output
+            {
+                "$project": {
+                    "category": "$_id",
+                    "unique_users": 1,
+                    "total_interactions": 1,
+                    "avg_interactions_per_user": {"$round": ["$avg_interactions_per_user", 1]},
+                    "_id": 0
+                }
+            },
+            # 5. Sortiraj po broju korisnika
+            {
+                "$sort": {"unique_users": -1}
             }
-        },
-        {
-            "$group": {
-                "_id": {
-                    "user_id": "$user_id",
-                    "category": "$page"
-                },
-                "interactions": {"$sum": 1}
-            }
-        },
-        {
-            "$group": {
-                "_id": "$_id.category",
-                "unique_users": {"$sum": 1},
-                "total_interactions": {"$sum": "$interactions"},
-                "avg_interactions_per_user": {"$avg": "$interactions"}
-            }
-        },
-        {
-            "$project": {
-                "category": "$_id",
-                "unique_users": 1,
-                "total_interactions": 1,
-                "avg_interactions_per_user": {"$round": ["$avg_interactions_per_user", 1]},
-                "_id": 0
-            }
-        },
-        {
-            "$sort": {"unique_users": -1}
-        }
-    ]
+        ]
     
     try:
         distribution_data = list(events_collection.aggregate(pipeline))
@@ -1160,7 +1176,7 @@ def get_simulated_user_distribution():
     """Simulirani podaci za user distribution"""
     
     simulated_data = [
-        {"category": "Analytics", "unique_users": 450, "total_interactions": 1800, "avg_interactions_per_user": 4.0, "percentage": 32.1},
+        {"category": "Home", "unique_users": 450, "total_interactions": 1800, "avg_interactions_per_user": 4.0, "percentage": 32.1},
         {"category": "Technology", "unique_users": 380, "total_interactions": 1520, "avg_interactions_per_user": 4.0, "percentage": 27.1},
         {"category": "Business", "unique_users": 280, "total_interactions": 840, "avg_interactions_per_user": 3.0, "percentage": 20.0},
         {"category": "Sports", "unique_users": 150, "total_interactions": 450, "avg_interactions_per_user": 3.0, "percentage": 10.7},
@@ -1169,10 +1185,10 @@ def get_simulated_user_distribution():
     ]
     
     interpretation = (
-        "The most popular category is 'Analytics' with 32.1% of users (450 users). "
-        "Users interested in 'Analytics' are highly engaged, with an average of 4.0 interactions per user. "
+        "The most popular category is 'Home' with 32.1% of users (450 users). "
+        "Users interested in 'Home' are highly engaged, with an average of 4.0 interactions per user. "
         "The top 3 categories account for 79.2% of all users, indicating strong focus areas. "
-        "RECOMMENDATION: Since 'Analytics' dominates user interest, consider featuring more analytics content. "
+        "RECOMMENDATION: Since 'Home' dominates user interest, consider featuring more home content. "
         "NOTE: Categories with low traffic: 'Health', 'Entertainment'. Consider promoting these sections."
     )
     
